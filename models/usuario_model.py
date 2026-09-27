@@ -57,6 +57,23 @@ class UsuarioModel:
         dados["id"] = documento.id
         return dados
 
+    def buscar_por_uid(self, uid):
+        documento = self.collection.document(uid).get()
+        if not documento.exists:
+            return None
+        dados = documento.to_dict()
+        dados["id"] = documento.id
+        return dados
+
+    def buscar_por_ra(self, ra):
+        documentos = self.collection.where("ra", "==", ra).limit(1).stream()
+        documento = next(iter(documentos), None)
+        if documento is None:
+            return None
+        dados = documento.to_dict()
+        dados["id"] = documento.id
+        return dados
+
     # UPDATE
     def atualizar(self, usuario_id, nome, email, ra=None, perfil="aluno", ativo=True):
 
