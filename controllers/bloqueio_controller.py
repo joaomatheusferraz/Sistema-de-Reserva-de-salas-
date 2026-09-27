@@ -18,9 +18,9 @@ class BloqueioController:
         except (ValueError, TypeError, PermissionError) as erro:
             return False, str(erro)
 
-    def remover_bloqueio(self, bloqueio_id, perfil):
+    def remover_bloqueio(self, bloqueio_id, perfil, executado_por_id):
         try:
-            self.service.remover(bloqueio_id, perfil)
+            self.service.remover(bloqueio_id, perfil, executado_por_id)
             return True, "Bloqueio removido com sucesso!"
         except (ValueError, TypeError, PermissionError) as erro:
             return False, str(erro)

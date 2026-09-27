@@ -4,6 +4,8 @@ from domain.enums import Perfil
 from models.espaco_model import EspacoModel
 from models.reserva_model import ReservaModel
 from models.usuario_model import UsuarioModel
+from services.historico_service import HistoricoService
+from services.notificacao_service import NotificacaoService
 from utils.validators import texto_obrigatorio
 
 
@@ -12,10 +14,19 @@ class ReservaService:
     STATUS_PENDENTE = "pendente"
     STATUS_RESERVADA = "reservada"
 
-    def __init__(self, model=None, usuario_model=None, espaco_model=None):
+    def __init__(
+        self,
+        model=None,
+        usuario_model=None,
+        espaco_model=None,
+        historico_service=None,
+        notificacao_service=None,
+    ):
         self.model = model or ReservaModel()
         self.usuario_model = usuario_model or UsuarioModel()
         self.espaco_model = espaco_model or EspacoModel()
+        self.historico = historico_service or HistoricoService()
+        self.notificacoes = notificacao_service or NotificacaoService()
 
     def criar(self, espaco_id, responsavel_id, inicio, fim, finalidade, perfil):
         self._validar_dados(
@@ -46,7 +57,7 @@ class ReservaService:
                 raise PermissionError("Usuário externo não tem acesso a esse espaço.")
 
         aprovacao_necessaria = perfil != Perfil.COORDENADOR.value
-        return self.model.criar_se_disponivel({
+        dados = {
             "espaco_id": espaco_id,
             "responsavel_id": responsavel_id,
             "inicio": inicio,
@@ -60,7 +71,21 @@ class ReservaService:
             "aprovacao_necessaria": aprovacao_necessaria,
             "analisada_por_id": None,
             "motivo_rejeicao": None,
-        })
+        }
+        reserva_id = self.model.criar_se_disponivel(dados)
+        self._registrar(
+            reserva_id,
+            "criacao",
+            responsavel_id,
+            dados_novos=dados,
+        )
+        self._notificar(
+            responsavel_id,
+            "reserva_criada",
+            "Sua solicitação de reserva foi criada.",
+            reserva_id,
+        )
+        return reserva_id
 
     def listar_do_responsavel(self, responsavel_id):
         if not texto_obrigatorio(responsavel_id):
@@ -83,6 +108,13 @@ class ReservaService:
             "analisada_por_id": coordenador_id,
             "motivo_rejeicao": None,
         })
+        self._registrar(reserva_id, "aprovacao", coordenador_id)
+        self._notificar(
+            reserva.get("responsavel_id"),
+            "reserva_aprovada",
+            "Sua solicitação de reserva foi aprovada.",
+            reserva_id,
+        )
 
     def rejeitar(self, reserva_id, coordenador_id, perfil, motivo=None):
         self._exigir_coordenador(perfil)
@@ -95,6 +127,13 @@ class ReservaService:
             "analisada_por_id": coordenador_id,
             "motivo_rejeicao": motivo.strip() if motivo else None,
         })
+        self._registrar(reserva_id, "rejeicao", coordenador_id)
+        self._notificar(
+            reserva.get("responsavel_id"),
+            "reserva_rejeitada",
+            "Sua solicitação de reserva foi rejeitada.",
+            reserva_id,
+        )
 
     def cancelar(self, reserva_id, responsavel_id, perfil):
         reserva = self._obter_reserva(reserva_id)
@@ -108,6 +147,13 @@ class ReservaService:
         self.model.atualizar_status(reserva_id, {
             "status": "cancelada",
         })
+        self._registrar(reserva_id, "cancelamento", responsavel_id)
+        self._notificar(
+            reserva.get("responsavel_id"),
+            "reserva_cancelada",
+            "Sua reserva foi cancelada.",
+            reserva_id,
+        )
 
     def editar(self, reserva_id, responsavel_id, perfil, dados):
         reserva = self._obter_reserva(reserva_id)
@@ -132,6 +178,25 @@ class ReservaService:
             "fim": dados["fim"],
             "finalidade": dados["finalidade"].strip(),
         })
+        self._registrar(reserva_id, "alteracao", responsavel_id, dados_novos=dados)
+        self._notificar(
+            reserva.get("responsavel_id"),
+            "reserva_alterada",
+            "Sua reserva foi alterada.",
+            reserva_id,
+        )
+
+    def _registrar(self, reserva_id, acao, executado_por_id, dados_novos=None):
+        self.historico.registrar(
+            "reserva",
+            reserva_id,
+            acao,
+            executado_por_id,
+            dados_novos=dados_novos,
+        )
+
+    def _notificar(self, usuario_id, tipo, mensagem, reserva_id):
+        self.notificacoes.criar(usuario_id, tipo, mensagem, reserva_id)
 
     def _obter_reserva(self, reserva_id):
         reserva = self.buscar(reserva_id)

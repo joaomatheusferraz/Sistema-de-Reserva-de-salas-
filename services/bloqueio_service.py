@@ -3,14 +3,16 @@ from datetime import datetime
 from domain.enums import Perfil
 from models.bloqueio_model import BloqueioModel
 from models.espaco_model import EspacoModel
+from services.historico_service import HistoricoService
 from utils.validators import texto_obrigatorio
 
 
 class BloqueioService:
 
-    def __init__(self, model=None, espaco_model=None):
+    def __init__(self, model=None, espaco_model=None, historico_service=None):
         self.model = model or BloqueioModel()
         self.espaco_model = espaco_model or EspacoModel()
+        self.historico = historico_service or HistoricoService()
 
     def criar(
         self,
@@ -33,23 +35,38 @@ class BloqueioService:
         if not espaco or not espaco.get("ativo", True):
             raise ValueError("Espaço não encontrado ou inativo.")
 
-        return self.model.criar({
+        bloqueio_id = self.model.criar({
             "espaco_id": espaco_id,
             "inicio": inicio,
             "fim": fim,
             "motivo": motivo.strip(),
             "responsavel_id": responsavel_id,
         })
+        self.historico.registrar(
+            "bloqueio",
+            bloqueio_id,
+            "criacao",
+            responsavel_id,
+        )
+        return bloqueio_id
 
     def listar(self, perfil, apenas_ativos=True):
         self._exigir_coordenador(perfil)
         return self.model.listar(apenas_ativos=apenas_ativos)
 
-    def remover(self, bloqueio_id, perfil):
+    def remover(self, bloqueio_id, perfil, executado_por_id):
         self._exigir_coordenador(perfil)
         if not texto_obrigatorio(bloqueio_id):
             raise ValueError("Informe o bloqueio.")
+        if not texto_obrigatorio(executado_por_id):
+            raise ValueError("Informe o responsável pela remoção.")
         self.model.remover(bloqueio_id)
+        self.historico.registrar(
+            "bloqueio",
+            bloqueio_id,
+            "remocao",
+            executado_por_id,
+        )
 
     @staticmethod
     def _exigir_coordenador(perfil):
