@@ -18,6 +18,64 @@ class ReservaModel:
         }
         return self.collection.add(documento)[1].id
 
+    def criar_se_disponivel(self, dados):
+        inicio = dados["inicio"]
+        fim = dados["fim"]
+        espaco_id = dados["espaco_id"]
+        transacao = self.db.transaction()
+
+        @firestore.transactional
+        def executar(transacao):
+            reservas_query = self.collection.where(
+                "espaco_id", "==", espaco_id
+            ).where(
+                "status", "in", ["pendente", "reservada"]
+            )
+            reservas = transacao.get(reservas_query)
+            for reserva in reservas:
+                reserva_dados = reserva.to_dict()
+                if self._sobrepoe(
+                    inicio,
+                    fim,
+                    reserva_dados.get("inicio"),
+                    reserva_dados.get("fim"),
+                ):
+                    raise ValueError("O espaço já está ocupado nesse período.")
+
+            bloqueios_query = self.db.collection("bloqueios").where(
+                "espaco_id", "==", espaco_id
+            ).where("ativo", "==", True)
+            bloqueios = transacao.get(bloqueios_query)
+            for bloqueio in bloqueios:
+                bloqueio_dados = bloqueio.to_dict()
+                if self._sobrepoe(
+                    inicio,
+                    fim,
+                    bloqueio_dados.get("inicio"),
+                    bloqueio_dados.get("fim"),
+                ):
+                    raise ValueError("O espaço está bloqueado nesse período.")
+
+            documento = {
+                **dados,
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "updated_at": firestore.SERVER_TIMESTAMP,
+            }
+            referencia = self.collection.document()
+            transacao.create(referencia, documento)
+            return referencia.id
+
+        return executar(transacao)
+
+    @staticmethod
+    def _sobrepoe(inicio_novo, fim_novo, inicio_existente, fim_existente):
+        if inicio_existente is None or fim_existente is None:
+            return False
+        return (
+            inicio_novo < fim_existente
+            and fim_novo > inicio_existente
+        )
+
     def buscar(self, reserva_id):
         documento = self.collection.document(reserva_id).get()
         if not documento.exists:

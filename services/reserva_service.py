@@ -42,7 +42,7 @@ class ReservaService:
             raise PermissionError("Aluno não pode criar reservas.")
 
         aprovacao_necessaria = perfil != Perfil.COORDENADOR.value
-        return self.model.criar({
+        return self.model.criar_se_disponivel({
             "espaco_id": espaco_id,
             "responsavel_id": responsavel_id,
             "inicio": inicio,
