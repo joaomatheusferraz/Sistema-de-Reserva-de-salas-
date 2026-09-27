@@ -1,4 +1,6 @@
 from models.usuario_model import UsuarioModel
+from domain.enums import Perfil
+from utils.validators import validar_email
 
 
 class UsuarioController:
@@ -6,7 +8,7 @@ class UsuarioController:
     def __init__(self):
         self.model = UsuarioModel()
 
-    def cadastrar_usuario(self, nome, email):
+    def cadastrar_usuario(self, nome, email, ra=None, perfil=Perfil.ALUNO.value):
 
         nome = nome.strip()
         email = email.strip()
@@ -16,10 +18,14 @@ class UsuarioController:
 
         if not email:
             return False, "Informe o e-mail."
+        if not validar_email(email):
+            return False, "Informe um e-mail válido."
+        if perfil not in {item.value for item in Perfil}:
+            return False, "Perfil inválido."
 
         try:
 
-            usuario_id = self.model.criar(nome, email)
+            usuario_id = self.model.criar(nome, email, ra, perfil)
 
             return True, f"Usuário cadastrado! ID: {usuario_id}"
 
@@ -39,7 +45,15 @@ class UsuarioController:
 
             return []
 
-    def atualizar_usuario(self, usuario_id, nome, email):
+    def atualizar_usuario(
+        self,
+        usuario_id,
+        nome,
+        email,
+        ra=None,
+        perfil=Perfil.ALUNO.value,
+        ativo=True,
+    ):
 
         nome = nome.strip()
         email = email.strip()
@@ -49,13 +63,20 @@ class UsuarioController:
 
         if not email:
             return False, "Informe o e-mail."
+        if not validar_email(email):
+            return False, "Informe um e-mail válido."
+        if perfil not in {item.value for item in Perfil}:
+            return False, "Perfil inválido."
 
         try:
 
             self.model.atualizar(
                 usuario_id,
                 nome,
-                email
+                email,
+                ra,
+                perfil,
+                ativo,
             )
 
             return True, "Usuário atualizado com sucesso!"

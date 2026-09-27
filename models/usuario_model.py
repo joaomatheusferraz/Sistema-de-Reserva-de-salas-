@@ -1,4 +1,5 @@
 from utils.firebase_utils import init_firestore
+from firebase_admin import firestore
 
 
 class UsuarioModel:
@@ -8,11 +9,16 @@ class UsuarioModel:
         self.collection = self.db.collection("usuarios")
 
     # CREATE
-    def criar(self, nome, email):
+    def criar(self, nome, email, ra=None, perfil="aluno"):
 
         documento = {
             "nome": nome,
-            "email": email
+            "email": email,
+            "ra": ra,
+            "perfil": perfil,
+            "ativo": True,
+            "created_at": firestore.SERVER_TIMESTAMP,
+            "updated_at": firestore.SERVER_TIMESTAMP,
         }
 
         doc_ref = self.collection.add(documento)
@@ -33,17 +39,26 @@ class UsuarioModel:
             usuarios.append({
                 "id": documento.id,
                 "nome": dados.get("nome"),
-                "email": dados.get("email")
+                "email": dados.get("email"),
+                "ra": dados.get("ra"),
+                "perfil": dados.get("perfil", "aluno"),
+                "ativo": dados.get("ativo", True),
+                "created_at": dados.get("created_at"),
+                "updated_at": dados.get("updated_at")
             })
 
         return usuarios
 
     # UPDATE
-    def atualizar(self, usuario_id, nome, email):
+    def atualizar(self, usuario_id, nome, email, ra=None, perfil="aluno", ativo=True):
 
         documento = {
             "nome": nome,
-            "email": email
+            "email": email,
+            "ra": ra,
+            "perfil": perfil,
+            "ativo": ativo,
+            "updated_at": firestore.SERVER_TIMESTAMP
         }
 
         self.collection.document(usuario_id).update(documento)
