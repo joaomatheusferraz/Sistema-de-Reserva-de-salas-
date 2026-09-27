@@ -40,6 +40,12 @@ class ReservaController:
         except (ValueError, TypeError) as erro:
             return False, str(erro)
 
+    def listar_pendentes(self, perfil):
+        try:
+            return self.service.listar_pendentes(perfil)
+        except (ValueError, TypeError, PermissionError) as erro:
+            return False, str(erro)
+
     def aprovar_reserva(self, reserva_id, coordenador_id, perfil):
         try:
             self.service.aprovar(reserva_id, coordenador_id, perfil)

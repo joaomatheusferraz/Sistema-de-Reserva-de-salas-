@@ -92,6 +92,10 @@ class ReservaService:
             raise ValueError("Informe o responsável da reserva.")
         return self.model.listar_por_responsavel(responsavel_id)
 
+    def listar_pendentes(self, perfil):
+        self._exigir_coordenador(perfil)
+        return self.model.listar_por_status(self.STATUS_PENDENTE)
+
     def buscar(self, reserva_id):
         if not texto_obrigatorio(reserva_id):
             raise ValueError("Informe a reserva.")

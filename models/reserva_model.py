@@ -149,3 +149,12 @@ class ReservaModel:
             dados["id"] = documento.id
             reservas.append(dados)
         return reservas
+
+    def listar_por_status(self, status):
+        reservas = []
+        consulta = self.collection.where("status", "==", status)
+        for documento in consulta.stream():
+            dados = documento.to_dict()
+            dados["id"] = documento.id
+            reservas.append(dados)
+        return reservas
