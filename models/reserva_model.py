@@ -84,6 +84,61 @@ class ReservaModel:
         dados["id"] = documento.id
         return dados
 
+    def atualizar_status(self, reserva_id, dados):
+        self.collection.document(reserva_id).update({
+            **dados,
+            "updated_at": firestore.SERVER_TIMESTAMP,
+        })
+
+    def atualizar_se_disponivel(self, reserva_id, dados):
+        transacao = self.db.transaction()
+        referencia = self.collection.document(reserva_id)
+
+        @firestore.transactional
+        def executar(transacao):
+            atual = transacao.get(referencia)
+            if not atual.exists:
+                raise ValueError("Reserva não encontrada.")
+
+            reservas_query = self.collection.where(
+                "espaco_id", "==", dados["espaco_id"]
+            ).where(
+                "status", "in", ["pendente", "reservada"]
+            )
+            reservas = transacao.get(reservas_query)
+            for reserva in reservas:
+                if reserva.id == reserva_id:
+                    continue
+                reserva_dados = reserva.to_dict()
+                if self._sobrepoe(
+                    dados["inicio"],
+                    dados["fim"],
+                    reserva_dados.get("inicio"),
+                    reserva_dados.get("fim"),
+                ):
+                    raise ValueError("O espaço já está ocupado nesse período.")
+
+            bloqueios_query = self.db.collection("bloqueios").where(
+                "espaco_id", "==", dados["espaco_id"]
+            ).where("ativo", "==", True)
+            bloqueios = transacao.get(bloqueios_query)
+            for bloqueio in bloqueios:
+                bloqueio_dados = bloqueio.to_dict()
+                if self._sobrepoe(
+                    dados["inicio"],
+                    dados["fim"],
+                    bloqueio_dados.get("inicio"),
+                    bloqueio_dados.get("fim"),
+                ):
+                    raise ValueError("O espaço está bloqueado nesse período.")
+
+            transacao.update(referencia, {
+                **dados,
+                "updated_at": firestore.SERVER_TIMESTAMP,
+            })
+
+        executar(transacao)
+
     def listar_por_responsavel(self, responsavel_id):
         reservas = []
         consulta = self.collection.where(

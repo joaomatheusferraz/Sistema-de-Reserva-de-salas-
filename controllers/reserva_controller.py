@@ -39,3 +39,42 @@ class ReservaController:
             return self.service.listar_do_responsavel(responsavel_id)
         except (ValueError, TypeError) as erro:
             return False, str(erro)
+
+    def aprovar_reserva(self, reserva_id, coordenador_id, perfil):
+        try:
+            self.service.aprovar(reserva_id, coordenador_id, perfil)
+            return True, "Reserva aprovada com sucesso!"
+        except (ValueError, TypeError, PermissionError) as erro:
+            return False, str(erro)
+
+    def rejeitar_reserva(
+        self,
+        reserva_id,
+        coordenador_id,
+        perfil,
+        motivo=None,
+    ):
+        try:
+            self.service.rejeitar(
+                reserva_id,
+                coordenador_id,
+                perfil,
+                motivo,
+            )
+            return True, "Reserva rejeitada com sucesso!"
+        except (ValueError, TypeError, PermissionError) as erro:
+            return False, str(erro)
+
+    def cancelar_reserva(self, reserva_id, responsavel_id, perfil):
+        try:
+            self.service.cancelar(reserva_id, responsavel_id, perfil)
+            return True, "Reserva cancelada com sucesso!"
+        except (ValueError, TypeError, PermissionError) as erro:
+            return False, str(erro)
+
+    def editar_reserva(self, reserva_id, responsavel_id, perfil, dados):
+        try:
+            self.service.editar(reserva_id, responsavel_id, perfil, dados)
+            return True, "Reserva atualizada com sucesso!"
+        except (ValueError, TypeError, PermissionError) as erro:
+            return False, str(erro)

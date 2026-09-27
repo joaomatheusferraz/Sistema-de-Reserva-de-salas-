@@ -68,6 +68,85 @@ class ReservaService:
             raise ValueError("Informe a reserva.")
         return self.model.buscar(reserva_id)
 
+    def aprovar(self, reserva_id, coordenador_id, perfil):
+        self._exigir_coordenador(perfil)
+        reserva = self._obter_reserva(reserva_id)
+        if reserva.get("status") != self.STATUS_PENDENTE:
+            raise ValueError("Somente reservas pendentes podem ser aprovadas.")
+        self.model.atualizar_status(reserva_id, {
+            "status": self.STATUS_RESERVADA,
+            "aprovacao_necessaria": False,
+            "analisada_por_id": coordenador_id,
+            "motivo_rejeicao": None,
+        })
+
+    def rejeitar(self, reserva_id, coordenador_id, perfil, motivo=None):
+        self._exigir_coordenador(perfil)
+        reserva = self._obter_reserva(reserva_id)
+        if reserva.get("status") != self.STATUS_PENDENTE:
+            raise ValueError("Somente reservas pendentes podem ser rejeitadas.")
+        self.model.atualizar_status(reserva_id, {
+            "status": "rejeitada",
+            "aprovacao_necessaria": False,
+            "analisada_por_id": coordenador_id,
+            "motivo_rejeicao": motivo.strip() if motivo else None,
+        })
+
+    def cancelar(self, reserva_id, responsavel_id, perfil):
+        reserva = self._obter_reserva(reserva_id)
+        self._exigir_dono_ou_coordenador(
+            reserva,
+            responsavel_id,
+            perfil,
+        )
+        if reserva.get("status") in {"rejeitada", "cancelada"}:
+            raise ValueError("Essa reserva já não está ativa.")
+        self.model.atualizar_status(reserva_id, {
+            "status": "cancelada",
+        })
+
+    def editar(self, reserva_id, responsavel_id, perfil, dados):
+        reserva = self._obter_reserva(reserva_id)
+        self._exigir_dono_ou_coordenador(
+            reserva,
+            responsavel_id,
+            perfil,
+        )
+        if reserva.get("status") in {"rejeitada", "cancelada"}:
+            raise ValueError("Essa reserva não pode ser editada.")
+        self._validar_dados(
+            dados.get("espaco_id"),
+            reserva.get("responsavel_id"),
+            dados.get("inicio"),
+            dados.get("fim"),
+            dados.get("finalidade"),
+            reserva.get("perfil", perfil),
+        )
+        self.model.atualizar_se_disponivel(reserva_id, {
+            "espaco_id": dados["espaco_id"],
+            "inicio": dados["inicio"],
+            "fim": dados["fim"],
+            "finalidade": dados["finalidade"].strip(),
+        })
+
+    def _obter_reserva(self, reserva_id):
+        reserva = self.buscar(reserva_id)
+        if not reserva:
+            raise ValueError("Reserva não encontrada.")
+        return reserva
+
+    @staticmethod
+    def _exigir_coordenador(perfil):
+        if perfil != Perfil.COORDENADOR.value:
+            raise PermissionError("Somente coordenador pode analisar reservas.")
+
+    @staticmethod
+    def _exigir_dono_ou_coordenador(reserva, responsavel_id, perfil):
+        eh_coordenador = perfil == Perfil.COORDENADOR.value
+        eh_dono = reserva.get("responsavel_id") == responsavel_id
+        if not eh_coordenador and not eh_dono:
+            raise PermissionError("Usuário sem permissão para alterar a reserva.")
+
     def _validar_dados(
         self,
         espaco_id,
