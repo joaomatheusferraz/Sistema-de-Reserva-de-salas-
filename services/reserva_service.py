@@ -40,6 +40,10 @@ class ReservaService:
 
         if perfil == Perfil.ALUNO.value:
             raise PermissionError("Aluno não pode criar reservas.")
+        if perfil == Perfil.EXTERNO.value:
+            autorizados = usuario.get("espacos_autorizados_ids", [])
+            if espaco_id not in autorizados:
+                raise PermissionError("Usuário externo não tem acesso a esse espaço.")
 
         aprovacao_necessaria = perfil != Perfil.COORDENADOR.value
         return self.model.criar_se_disponivel({
