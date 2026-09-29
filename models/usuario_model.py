@@ -9,7 +9,7 @@ class UsuarioModel:
         self.collection = self.db.collection("usuarios")
 
     # CREATE
-    def criar(self, nome, email, ra=None, perfil="aluno"):
+    def criar(self, nome, email, ra=None, perfil="aluno", uid=None):
 
         documento = {
             "nome": nome,
@@ -21,8 +21,10 @@ class UsuarioModel:
             "updated_at": firestore.SERVER_TIMESTAMP,
         }
 
+        if uid:
+            self.collection.document(uid).set(documento)
+            return uid
         doc_ref = self.collection.add(documento)
-
         return doc_ref[1].id
 
     # READ

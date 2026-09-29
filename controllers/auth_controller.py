@@ -15,8 +15,15 @@ class AuthController:
                 resultado["id_token"],
             )
             return True, "Login realizado com sucesso."
-        except (ValueError, PermissionError, RuntimeError):
-            return False, "Não foi possível realizar o login."
+        except (ValueError, PermissionError, RuntimeError) as erro:
+            return False, str(erro)
+
+    def registrar(self, nome, email, ra, senha, perfil="aluno"):
+        try:
+            self.service.registrar_usuario(nome, email, ra, senha, perfil)
+            return True, "Cadastro realizado com sucesso. Já é possível entrar."
+        except (ValueError, PermissionError, RuntimeError) as erro:
+            return False, str(erro)
 
     def validar_token(self, id_token):
         try:
