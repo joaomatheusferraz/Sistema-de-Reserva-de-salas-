@@ -6,7 +6,8 @@ from controllers.usuario_controller import UsuarioController
 
 
 def coordenador_view(usuario):
-    if usuario.get("perfil") != "coordenador":
+    perfil = str(usuario.get("perfil", "aluno")).strip().lower()
+    if perfil != "coordenador":
         st.error("Acesso restrito ao coordenador.")
         return
 
@@ -17,7 +18,7 @@ def coordenador_view(usuario):
     usuarios = UsuarioController().listar_usuarios()
     nomes_espacos = {item["id"]: item.get("nome", item["id"]) for item in espacos}
     nomes_usuarios = {item["id"]: item.get("nome", item["id"]) for item in usuarios}
-    pendentes = controller.listar_pendentes(usuario.get("perfil"))
+    pendentes = controller.listar_pendentes(perfil)
     if isinstance(pendentes, tuple):
         st.error(pendentes[1])
         return
@@ -37,7 +38,7 @@ def coordenador_view(usuario):
             with st.container(horizontal=True):
                 if st.button("Aprovar", key=f"aprovar_{reserva['id']}"):
                     ok, mensagem = controller.aprovar_reserva(
-                        reserva["id"], usuario["id"], usuario["perfil"]
+                        reserva["id"], usuario["id"], perfil
                     )
                     if ok:
                         st.success(mensagem)
@@ -47,7 +48,7 @@ def coordenador_view(usuario):
             with st.container(horizontal=True):
                 if st.button("Rejeitar", key=f"rejeitar_{reserva['id']}"):
                     ok, mensagem = controller.rejeitar_reserva(
-                        reserva["id"], usuario["id"], usuario["perfil"], motivo
+                        reserva["id"], usuario["id"], perfil, motivo
                     )
                     if ok:
                         st.success(mensagem)

@@ -6,8 +6,9 @@ from controllers.espaco_controller import EspacoController
 def espacos_view(usuario):
     st.title("Espaços")
     controller = EspacoController()
+    perfil = str(usuario.get("perfil", "aluno")).strip().lower()
 
-    if usuario.get("perfil") == "coordenador":
+    if perfil == "coordenador":
         with st.expander("Cadastrar nova sala", icon=":material/add_business:"):
             with st.form("cadastrar_espaco"):
                 nome = st.text_input("Nome da sala")
@@ -64,7 +65,10 @@ def espacos_view(usuario):
         return
 
     if not espacos:
-        st.info("Nenhum espaço ativo cadastrado.")
+        if perfil == "coordenador":
+            st.info("Nenhum espaço ativo cadastrado. Use o formulário acima para cadastrar a primeira sala.")
+        else:
+            st.info("Nenhum espaço ativo cadastrado. Peça ao coordenador para cadastrar uma sala.")
         return
 
     for espaco in espacos:
