@@ -29,6 +29,7 @@ class ReservaService:
         self.notificacoes = notificacao_service or NotificacaoService()
 
     def criar(self, espaco_id, responsavel_id, inicio, fim, finalidade, perfil):
+        perfil = str(perfil).strip().lower() if perfil is not None else ""
         self._validar_dados(
             espaco_id,
             responsavel_id,
@@ -46,7 +47,8 @@ class ReservaService:
         if not espaco or not espaco.get("ativo", True):
             raise ValueError("Espaço não encontrado ou inativo.")
 
-        if usuario.get("perfil") != perfil:
+        perfil_usuario = str(usuario.get("perfil", "")).strip().lower()
+        if perfil_usuario != perfil:
             raise ValueError("O perfil informado não corresponde ao usuário.")
 
         if perfil not in {Perfil.PROFESSOR.value, Perfil.EXTERNO.value}:
@@ -234,6 +236,7 @@ class ReservaService:
             raise ValueError("O fim deve ser posterior ao início.")
         if not texto_obrigatorio(finalidade):
             raise ValueError("Informe a finalidade da reserva.")
+        perfil = str(perfil).strip().lower() if perfil is not None else ""
         if perfil not in {
             Perfil.ALUNO.value,
             Perfil.PROFESSOR.value,

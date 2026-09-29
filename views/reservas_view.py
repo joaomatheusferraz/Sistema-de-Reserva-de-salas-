@@ -8,19 +8,26 @@ from controllers.espaco_controller import EspacoController
 
 def reservas_view(usuario):
     st.title("Reservas")
-    perfil = usuario.get("perfil", "aluno")
+    perfil = str(usuario.get("perfil", "aluno")).strip().lower()
     controller = ReservaController()
 
     if perfil in {"professor", "externo"}:
         st.subheader("Solicitar reserva")
-        espacos = EspacoController().listar_espacos()
+        try:
+            espacos = EspacoController().listar_espacos()
+        except Exception as erro:
+            st.error(f"Não foi possível carregar as salas do banco: {erro}")
+            espacos = []
         opcoes = {
             item["nome"]: item["id"]
             for item in espacos
             if item.get("ativo", True)
         }
         if not opcoes:
-            st.warning("Não há espaços ativos disponíveis para reserva.")
+            st.warning(
+                "Não há salas ativas disponíveis. Peça ao coordenador para "
+                "cadastrar ou ativar uma sala em Espaços."
+            )
         with st.form("solicitar_reserva", border=True):
             nome_espaco = st.selectbox("Espaço", list(opcoes)) if opcoes else None
             data = st.date_input("Data")
@@ -47,8 +54,21 @@ def reservas_view(usuario):
                 st.rerun()
             else:
                 st.error(resultado)
+    elif perfil == "aluno":
+        st.info(
+            "Sua conta é de aluno. Alunos podem consultar a agenda, mas "
+            "somente professores e usuários externos solicitam reservas."
+        )
+    elif perfil == "coordenador":
+        st.info(
+            "Sua conta é de coordenador. O coordenador aprova ou rejeita "
+            "solicitações; a reserva é feita por professor ou usuário externo."
+        )
     else:
-        st.info("Este perfil não solicita reservas.")
+        st.warning(
+            f"O perfil '{perfil}' não está configurado para solicitar reservas. "
+            "Use aluno, professor, externo ou coordenador."
+        )
 
     st.divider()
     st.subheader("Minhas solicitações")

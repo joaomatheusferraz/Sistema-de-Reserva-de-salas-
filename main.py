@@ -21,7 +21,9 @@ def app():
     usuario = usuario_atual()
     st.sidebar.title("UniReserve")
     st.sidebar.caption(usuario.get("nome", "Usuário"))
-    perfil = usuario.get("perfil", "aluno")
+    # Perfis são armazenados em minúsculas. Normalizar aqui evita que uma
+    # conta criada manualmente como "Professor" perca a opção de reservar.
+    perfil = str(usuario.get("perfil", "aluno")).strip().lower()
     paginas = ["Início", "Espaços", "Calendário"]
     if perfil in {"professor", "externo"}:
         paginas.insert(2, "Reservas")
