@@ -86,8 +86,22 @@ class FakeReservationModel:
     def atualizar_status(self, reserva_id, dados):
         self.data[reserva_id].update(dados)
 
+    def aprovar_se_disponivel(self, reserva_id, coordenador_id):
+        self.data[reserva_id].update({
+            "status": "reservada",
+            "aprovacao_necessaria": False,
+            "analisada_por_id": coordenador_id,
+            "motivo_rejeicao": None,
+        })
+
     def atualizar_se_disponivel(self, reserva_id, dados):
         self.data[reserva_id].update(dados)
+
+    def listar_ativas(self):
+        return [
+            item for item in self.data.values()
+            if item.get("status") in {"pendente", "reservada"}
+        ]
 
 
 class FakeBlockModel:
@@ -142,8 +156,10 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.reservation_model.data["r2"]["status"], "pendente")
 
         coordinator = self.make_reservation_service(FakeUserModel("coordenador"))
-        coordinator.criar("e1", "u1", self.inicio, self.fim, "reuniao", "coordenador")
-        self.assertEqual(self.reservation_model.data["r2"]["status"], "reservada")
+        with self.assertRaises(PermissionError):
+            coordinator.criar(
+                "e1", "u1", self.inicio, self.fim, "reuniao", "coordenador"
+            )
 
         student = self.make_reservation_service(FakeUserModel("aluno"))
         with self.assertRaises(PermissionError):
@@ -153,6 +169,38 @@ class ServiceTests(unittest.TestCase):
         service = self.make_reservation_service(FakeUserModel("externo", ["e2"]))
         with self.assertRaises(PermissionError):
             service.criar("e1", "u1", self.inicio, self.fim, "evento", "externo")
+
+        unrestricted = self.make_reservation_service(FakeUserModel("externo"))
+        unrestricted.criar(
+            "e1", "u1", self.inicio, self.fim, "evento", "externo"
+        )
+        self.assertEqual(self.reservation_model.data["r2"]["status"], "pendente")
+
+    def test_students_can_consult_calendar_but_not_create(self):
+        service = self.make_reservation_service(FakeUserModel("aluno"))
+        self.assertEqual(len(service.listar_calendario()), 1)
+        with self.assertRaises(PermissionError):
+            service.criar("e1", "u1", self.inicio, self.fim, "estudo", "aluno")
+
+    def test_overlap_rule_allows_adjacent_periods(self):
+        from models.reserva_model import ReservaModel
+
+        self.assertTrue(
+            ReservaModel._sobrepoe(
+                self.inicio,
+                self.fim,
+                self.inicio + timedelta(minutes=30),
+                self.fim + timedelta(minutes=30),
+            )
+        )
+        self.assertFalse(
+            ReservaModel._sobrepoe(
+                self.inicio,
+                self.fim,
+                self.fim,
+                self.fim + timedelta(hours=1),
+            )
+        )
 
     def test_workflow_and_audit(self):
         service = self.make_reservation_service()
@@ -168,6 +216,11 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.reservation_model.data["r1"]["status"], "cancelada")
         self.assertGreaterEqual(len(self.history.events), 3)
         self.assertGreaterEqual(len(self.notifications.events), 3)
+
+    def test_rejection_requires_reason(self):
+        service = self.make_reservation_service()
+        with self.assertRaises(ValueError):
+            service.rejeitar("r1", "coord1", "coordenador", "")
 
     def test_block_permission(self):
         service = BloqueioService(FakeBlockModel(), FakeSpaceModel(), self.history)

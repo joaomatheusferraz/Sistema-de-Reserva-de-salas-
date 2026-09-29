@@ -24,8 +24,12 @@ def login_view():
             novo_ra = st.text_input("RA", key="cadastro_ra")
             perfil = st.selectbox(
                 "Perfil",
-                ["aluno", "professor"],
-                format_func=lambda valor: valor.capitalize(),
+                ["aluno", "professor", "externo"],
+                format_func=lambda valor: {
+                    "aluno": "Aluno",
+                    "professor": "Professor",
+                    "externo": "Usuário externo",
+                }[valor],
                 key="cadastro_perfil",
             )
             nova_senha = st.text_input("Senha", type="password", key="cadastro_senha")

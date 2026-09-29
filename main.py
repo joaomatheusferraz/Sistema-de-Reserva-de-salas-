@@ -21,10 +21,15 @@ def app():
     usuario = usuario_atual()
     st.sidebar.title("UniReserve")
     st.sidebar.caption(usuario.get("nome", "Usuário"))
+    perfil = usuario.get("perfil", "aluno")
+    paginas = ["Início", "Espaços", "Calendário"]
+    if perfil in {"professor", "externo"}:
+        paginas.insert(2, "Reservas")
+    if perfil == "coordenador":
+        paginas.append("Coordenação")
     pagina = st.sidebar.radio(
         "Navegação",
-        ["Início", "Espaços", "Reservas", "Calendário"]
-        + (["Coordenação"] if usuario.get("perfil") == "coordenador" else []),
+        paginas,
     )
 
     if st.sidebar.button("Sair"):
@@ -34,7 +39,7 @@ def app():
     if pagina == "Início":
         home_view(usuario)
     elif pagina == "Espaços":
-        espacos_view()
+        espacos_view(usuario)
     elif pagina == "Reservas":
         reservas_view(usuario)
     elif pagina == "Calendário":

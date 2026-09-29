@@ -49,26 +49,21 @@ class ReservaService:
         if usuario.get("perfil") != perfil:
             raise ValueError("O perfil informado não corresponde ao usuário.")
 
-        if perfil == Perfil.ALUNO.value:
-            raise PermissionError("Aluno não pode criar reservas.")
+        if perfil not in {Perfil.PROFESSOR.value, Perfil.EXTERNO.value}:
+            raise PermissionError("Somente professor ou usuário externo pode solicitar reserva.")
         if perfil == Perfil.EXTERNO.value:
             autorizados = usuario.get("espacos_autorizados_ids", [])
-            if espaco_id not in autorizados:
+            if autorizados and espaco_id not in autorizados:
                 raise PermissionError("Usuário externo não tem acesso a esse espaço.")
 
-        aprovacao_necessaria = perfil != Perfil.COORDENADOR.value
         dados = {
             "espaco_id": espaco_id,
             "responsavel_id": responsavel_id,
             "inicio": inicio,
             "fim": fim,
             "finalidade": finalidade.strip(),
-            "status": (
-                self.STATUS_PENDENTE
-                if aprovacao_necessaria
-                else self.STATUS_RESERVADA
-            ),
-            "aprovacao_necessaria": aprovacao_necessaria,
+            "status": self.STATUS_PENDENTE,
+            "aprovacao_necessaria": True,
             "analisada_por_id": None,
             "motivo_rejeicao": None,
         }
@@ -96,6 +91,9 @@ class ReservaService:
         self._exigir_coordenador(perfil)
         return self.model.listar_por_status(self.STATUS_PENDENTE)
 
+    def listar_calendario(self):
+        return self.model.listar_ativas()
+
     def buscar(self, reserva_id):
         if not texto_obrigatorio(reserva_id):
             raise ValueError("Informe a reserva.")
@@ -106,12 +104,7 @@ class ReservaService:
         reserva = self._obter_reserva(reserva_id)
         if reserva.get("status") != self.STATUS_PENDENTE:
             raise ValueError("Somente reservas pendentes podem ser aprovadas.")
-        self.model.atualizar_status(reserva_id, {
-            "status": self.STATUS_RESERVADA,
-            "aprovacao_necessaria": False,
-            "analisada_por_id": coordenador_id,
-            "motivo_rejeicao": None,
-        })
+        self.model.aprovar_se_disponivel(reserva_id, coordenador_id)
         self._registrar(reserva_id, "aprovacao", coordenador_id)
         self._notificar(
             reserva.get("responsavel_id"),
@@ -122,6 +115,8 @@ class ReservaService:
 
     def rejeitar(self, reserva_id, coordenador_id, perfil, motivo=None):
         self._exigir_coordenador(perfil)
+        if not texto_obrigatorio(motivo):
+            raise ValueError("Informe o motivo da rejeição.")
         reserva = self._obter_reserva(reserva_id)
         if reserva.get("status") != self.STATUS_PENDENTE:
             raise ValueError("Somente reservas pendentes podem ser rejeitadas.")
@@ -129,7 +124,7 @@ class ReservaService:
             "status": "rejeitada",
             "aprovacao_necessaria": False,
             "analisada_por_id": coordenador_id,
-            "motivo_rejeicao": motivo.strip() if motivo else None,
+            "motivo_rejeicao": motivo.strip(),
         })
         self._registrar(reserva_id, "rejeicao", coordenador_id)
         self._notificar(

@@ -11,17 +11,29 @@ def reservas_view(usuario):
     perfil = usuario.get("perfil", "aluno")
     controller = ReservaController()
 
-    if perfil in {"professor", "coordenador", "externo"}:
+    if perfil in {"professor", "externo"}:
         st.subheader("Solicitar reserva")
         espacos = EspacoController().listar_espacos()
-        opcoes = {item["nome"]: item["id"] for item in espacos}
-        nome_espaco = st.selectbox("Espaço", list(opcoes)) if opcoes else None
-        data = st.date_input("Data")
-        inicio = st.time_input("Horário inicial", value=time(8, 0))
-        fim = st.time_input("Horário final", value=time(9, 0))
-        finalidade = st.text_area("Finalidade")
+        opcoes = {
+            item["nome"]: item["id"]
+            for item in espacos
+            if item.get("ativo", True)
+        }
+        if not opcoes:
+            st.warning("Não há espaços ativos disponíveis para reserva.")
+        with st.form("solicitar_reserva", border=True):
+            nome_espaco = st.selectbox("Espaço", list(opcoes)) if opcoes else None
+            data = st.date_input("Data")
+            inicio = st.time_input("Horário inicial", value=time(8, 0))
+            fim = st.time_input("Horário final", value=time(9, 0))
+            finalidade = st.text_area("Finalidade")
+            enviar = st.form_submit_button(
+                "Enviar solicitação",
+                type="primary",
+                disabled=not opcoes,
+            )
 
-        if st.button("Enviar solicitação", type="primary") and nome_espaco:
+        if enviar and nome_espaco:
             sucesso, resultado = controller.criar_reserva(
                 opcoes[nome_espaco],
                 usuario["id"],
@@ -35,11 +47,11 @@ def reservas_view(usuario):
                 st.rerun()
             else:
                 st.error(resultado)
-    elif perfil == "aluno":
-        st.info("Alunos podem consultar espaços, mas não solicitam reservas.")
+    else:
+        st.info("Este perfil não solicita reservas.")
 
     st.divider()
-    st.subheader("Minhas reservas")
+    st.subheader("Minhas solicitações")
     try:
         reservas = controller.listar_reservas_do_responsavel(usuario["id"])
     except Exception:
