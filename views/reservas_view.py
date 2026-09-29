@@ -6,6 +6,20 @@ from controllers.reserva_controller import ReservaController
 from controllers.espaco_controller import EspacoController
 
 
+def criar_controller_reservas():
+    try:
+        return ReservaController()
+    except Exception:
+        return None
+
+
+def criar_controller_espacos():
+    try:
+        return EspacoController()
+    except Exception:
+        return None
+
+
 def reservas_view(usuario):
     st.title("Reservas")
 
@@ -54,16 +68,32 @@ def reservas_view(usuario):
                 st.button("Reservar", key=f"reserva_{sala['nome']}_{i}_{j}", use_container_width=True, disabled=not sala["disponivel"])
 
     perfil = usuario.get("perfil", "aluno")
-    controller = ReservaController()
+    controller = criar_controller_reservas()
+    espaco_controller = criar_controller_espacos()
 
     if perfil in {"professor", "externo"}:
         st.subheader("Solicitar reserva")
-        espacos = EspacoController().listar_espacos()
-        opcoes = {
-            item["nome"]: item["id"]
-            for item in espacos
-            if item.get("ativo", True)
-        }
+        opcoes = {}
+
+        if espaco_controller is not None:
+            try:
+                espacos = espaco_controller.listar_espacos()
+                opcoes = {
+                    item["nome"]: item["id"]
+                    for item in espacos
+                    if item.get("ativo", True)
+                }
+            except Exception:
+                opcoes = {}
+
+        if not opcoes:
+            opcoes = {
+                "Sala 201": "demo-201",
+                "Sala 202": "demo-202",
+                "Auditório": "demo-auditorio",
+            }
+            st.caption("Modo demonstração: sem Firebase configurado, a reserva fica visual apenas.")
+
         if not opcoes:
             st.warning("Não há espaços ativos disponíveis para reserva.")
         with st.form("solicitar_reserva", border=True):
@@ -72,9 +102,13 @@ def reservas_view(usuario):
             inicio = st.time_input("Horário inicial", value=time(8, 0))
             fim = st.time_input("Horário final", value=time(9, 0))
             finalidade = st.text_area("Finalidade")
-            enviar = st.form_submit_button("Enviar solicitação", type="primary", disabled=not opcoes)
+            enviar = st.form_submit_button(
+                "Enviar solicitação",
+                type="primary",
+                disabled=not opcoes or controller is None,
+            )
 
-        if enviar and nome_espaco:
+        if enviar and nome_espaco and controller is not None:
             sucesso, resultado = controller.criar_reserva(
                 opcoes[nome_espaco],
                 usuario["id"],
@@ -88,15 +122,19 @@ def reservas_view(usuario):
                 st.rerun()
             else:
                 st.error(resultado)
+        elif enviar and controller is None:
+            st.info("Modo de demonstração: a reserva visual foi aceita no front-end, mas o backend está desabilitado.")
     else:
         st.info("Este perfil não solicita reservas.")
 
     st.divider()
     st.subheader("Minhas solicitações")
-    try:
-        reservas = controller.listar_reservas_do_responsavel(usuario["id"])
-    except Exception:
-        reservas = []
+    reservas = []
+    if controller is not None:
+        try:
+            reservas = controller.listar_reservas_do_responsavel(usuario["id"])
+        except Exception:
+            reservas = []
     if isinstance(reservas, tuple):
         st.error(reservas[1])
         return
