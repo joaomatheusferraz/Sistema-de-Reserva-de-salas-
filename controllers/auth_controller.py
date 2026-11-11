@@ -24,6 +24,8 @@ class AuthController:
             return True, "Cadastro realizado com sucesso. Já é possível entrar."
         except (ValueError, PermissionError, RuntimeError) as erro:
             return False, str(erro)
+        except Exception as erro:
+            return False, f"Erro inesperado ao cadastrar: {erro}"
 
     def validar_token(self, id_token):
         try:

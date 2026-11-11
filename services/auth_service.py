@@ -88,15 +88,56 @@ class AuthService:
         if not api_key:
             raise RuntimeError("FIREBASE_WEB_API_KEY não configurada.")
 
-        resposta = self.http_client.post(
-            "https://identitytoolkit.googleapis.com/v1/accounts:signUp",
-            params={"key": api_key},
-            json={"email": email, "password": senha, "returnSecureToken": True},
-            timeout=10,
-        )
+        try:
+            resposta = self.http_client.post(
+                "https://identitytoolkit.googleapis.com/v1/accounts:signUp",
+                params={"key": api_key},
+                json={"email": email, "password": senha, "returnSecureToken": True},
+                timeout=10,
+            )
+        except Exception as erro:
+            raise RuntimeError("Não foi possível conectar ao Firebase Authentication.") from erro
+
         if resposta.status_code != 200:
-            raise ValueError("Não foi possível criar a conta. Verifique os dados e tente novamente.")
+            raise ValueError(self._mensagem_erro_firebase(resposta))
 
         dados = resposta.json()
-        usuario_id = self.usuario_model.criar(nome, email, ra, perfil, dados["localId"])
+        uid = dados["localId"]
+        try:
+            usuario_id = self.usuario_model.criar(nome, email, ra, perfil, uid)
+        except Exception as erro:
+            # Desfaz a conta no Authentication para não deixar um e-mail
+            # "preso" (EMAIL_EXISTS) sem documento correspondente no Firestore.
+            try:
+                auth.delete_user(uid)
+            except Exception:
+                pass
+            raise RuntimeError(f"Erro ao salvar o usuário no Firestore: {erro}") from erro
+
         return {"id": usuario_id, "id_token": dados.get("idToken")}
+
+    @staticmethod
+    def _mensagem_erro_firebase(resposta):
+        try:
+            codigo = resposta.json().get("error", {}).get("message", "")
+        except Exception:
+            codigo = ""
+
+        mensagens = {
+            "EMAIL_EXISTS": "Este e-mail já está cadastrado.",
+            "INVALID_EMAIL": "E-mail inválido.",
+            "OPERATION_NOT_ALLOWED": (
+                "Cadastro por e-mail/senha desativado no Firebase. Ative em "
+                "Authentication > Sign-in method > E-mail/senha."
+            ),
+            "TOO_MANY_ATTEMPTS_TRY_LATER": "Muitas tentativas. Tente novamente mais tarde.",
+            "API_KEY_INVALID": "FIREBASE_WEB_API_KEY inválida.",
+        }
+        if codigo.startswith("WEAK_PASSWORD"):
+            return "A senha deve ter pelo menos 6 caracteres."
+        if codigo.startswith("API key not valid"):
+            return mensagens["API_KEY_INVALID"]
+        return mensagens.get(
+            codigo,
+            f"Não foi possível criar a conta ({codigo or resposta.status_code}).",
+        )
