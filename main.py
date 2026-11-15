@@ -2,6 +2,7 @@ import streamlit as st
 
 from controllers.auth_controller import AuthController
 from utils.session import autenticado, usuario_atual
+from utils.ui import normalizar_perfil, perfil_badge
 from views.calendario_view import calendario_view
 from views.coordenador_view import coordenador_view
 from views.espacos_view import espacos_view
@@ -10,44 +11,88 @@ from views.login_view import login_view
 from views.reservas_view import reservas_view
 
 
-st.set_page_config(page_title="UniReserve", page_icon="🏫", layout="wide")
+st.set_page_config(
+    page_title="UniReserve",
+    page_icon=":material/meeting_room:",
+    layout="wide",
+)
+
+
+# Cada página é um callable sem argumentos; o usuário vem da sessão.
+def pagina_inicio():
+    home_view(usuario_atual())
+
+
+def pagina_espacos():
+    espacos_view(usuario_atual())
+
+
+def pagina_reservas():
+    reservas_view(usuario_atual())
+
+
+def pagina_calendario():
+    calendario_view(usuario_atual())
+
+
+def pagina_coordenacao():
+    coordenador_view(usuario_atual())
+
+
+def sair():
+    AuthController.logout()
+
+
+def barra_lateral(usuario, perfil):
+    with st.sidebar:
+        with st.container(border=True, gap="xsmall"):
+            st.markdown(f"**{usuario.get('nome', 'Usuário')}**")
+            if usuario.get("email"):
+                st.caption(usuario["email"])
+            perfil_badge(perfil)
+        st.button(
+            "Sair",
+            icon=":material/logout:",
+            on_click=sair,
+            width="stretch",
+        )
 
 
 def app():
     if not autenticado():
-        login_view()
+        st.navigation(
+            [st.Page(login_view, title="Entrar", icon=":material/login:")],
+            position="hidden",
+        ).run()
         return
 
     usuario = usuario_atual()
-    st.sidebar.title("UniReserve")
-    st.sidebar.caption(usuario.get("nome", "Usuário"))
     # Perfis são armazenados em minúsculas. Normalizar aqui evita que uma
     # conta criada manualmente como "Professor" perca a opção de reservar.
-    perfil = str(usuario.get("perfil", "aluno")).strip().lower()
-    paginas = ["Início", "Espaços", "Calendário"]
+    perfil = normalizar_perfil(usuario)
+
+    paginas = {
+        "": [
+            st.Page(pagina_inicio, title="Início", icon=":material/space_dashboard:", url_path="inicio", default=True),
+        ],
+        "Salas": [
+            st.Page(pagina_espacos, title="Espaços", icon=":material/meeting_room:", url_path="espacos"),
+            st.Page(pagina_calendario, title="Calendário", icon=":material/calendar_month:", url_path="calendario"),
+        ],
+    }
     if perfil in {"professor", "externo"}:
-        paginas.insert(2, "Reservas")
+        paginas["Salas"].insert(
+            1,
+            st.Page(pagina_reservas, title="Minhas reservas", icon=":material/event_available:", url_path="reservas"),
+        )
     if perfil == "coordenador":
-        paginas.append("Coordenação")
-    pagina = st.sidebar.radio(
-        "Navegação",
-        paginas,
-    )
+        paginas["Gestão"] = [
+            st.Page(pagina_coordenacao, title="Coordenação", icon=":material/fact_check:", url_path="coordenacao"),
+        ]
 
-    if st.sidebar.button("Sair"):
-        AuthController.logout()
-        st.rerun()
-
-    if pagina == "Início":
-        home_view(usuario)
-    elif pagina == "Espaços":
-        espacos_view(usuario)
-    elif pagina == "Reservas":
-        reservas_view(usuario)
-    elif pagina == "Calendário":
-        calendario_view(usuario)
-    else:
-        coordenador_view(usuario)
+    pagina = st.navigation(paginas)
+    barra_lateral(usuario, perfil)
+    pagina.run()
 
 
 app()
