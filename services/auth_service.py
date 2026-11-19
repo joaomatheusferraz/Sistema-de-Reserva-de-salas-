@@ -36,15 +36,7 @@ class AuthService:
         if not usuario or not usuario.get("ativo", True):
             raise PermissionError("RA ou senha inválidos.")
 
-        api_key = os.environ.get("FIREBASE_WEB_API_KEY")
-        if not api_key:
-            try:
-                import streamlit as st
-                api_key = st.secrets.get("FIREBASE_WEB_API_KEY")
-            except Exception:
-                api_key = None
-        if not api_key:
-            raise RuntimeError("FIREBASE_WEB_API_KEY não configurada.")
+        api_key = self._api_key()
 
         resposta = self.http_client.post(
             "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
@@ -78,15 +70,7 @@ class AuthService:
         if self.usuario_model.buscar_por_ra(ra):
             raise ValueError("Já existe um usuário cadastrado com esse RA.")
 
-        api_key = os.environ.get("FIREBASE_WEB_API_KEY")
-        if not api_key:
-            try:
-                import streamlit as st
-                api_key = st.secrets.get("FIREBASE_WEB_API_KEY")
-            except Exception:
-                api_key = None
-        if not api_key:
-            raise RuntimeError("FIREBASE_WEB_API_KEY não configurada.")
+        api_key = self._api_key()
 
         try:
             resposta = self.http_client.post(
@@ -115,6 +99,60 @@ class AuthService:
             raise RuntimeError(f"Erro ao salvar o usuário no Firestore: {erro}") from erro
 
         return {"id": usuario_id, "id_token": dados.get("idToken")}
+
+    def enviar_redefinicao_senha(self, ra):
+        """Envia o e-mail de redefinição de senha do Firebase para o dono do RA.
+
+        Não informa se o RA existe: a resposta é a mesma nos dois casos,
+        para que a tela não sirva para descobrir quais RAs estão cadastrados.
+        """
+        ra = ra.strip() if isinstance(ra, str) else ""
+        if not ra:
+            raise ValueError("Informe o seu RA.")
+
+        usuario = self.usuario_model.buscar_por_ra(ra)
+        if not usuario or not usuario.get("ativo", True) or not usuario.get("email"):
+            return
+
+        api_key = self._api_key()
+        try:
+            resposta = self.http_client.post(
+                "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode",
+                params={"key": api_key},
+                json={"requestType": "PASSWORD_RESET", "email": usuario["email"]},
+                timeout=10,
+            )
+        except Exception as erro:
+            raise RuntimeError("Não foi possível conectar ao Firebase Authentication.") from erro
+
+        if resposta.status_code != 200:
+            codigo = self._codigo_erro(resposta)
+            if codigo == "EMAIL_NOT_FOUND":
+                # Usuário existe no Firestore, mas não no Authentication.
+                return
+            if codigo.startswith("TOO_MANY_ATTEMPTS"):
+                raise PermissionError("Muitas tentativas. Tente novamente mais tarde.")
+            raise RuntimeError("Não foi possível enviar o e-mail de redefinição.")
+
+    @staticmethod
+    def _api_key():
+        api_key = os.environ.get("FIREBASE_WEB_API_KEY")
+        if not api_key:
+            try:
+                import streamlit as st
+                api_key = st.secrets.get("FIREBASE_WEB_API_KEY")
+            except Exception:
+                api_key = None
+        if not api_key:
+            raise RuntimeError("FIREBASE_WEB_API_KEY não configurada.")
+        return api_key
+
+    @staticmethod
+    def _codigo_erro(resposta):
+        try:
+            return resposta.json().get("error", {}).get("message", "")
+        except Exception:
+            return ""
 
     @staticmethod
     def _mensagem_erro_firebase(resposta):

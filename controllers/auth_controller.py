@@ -27,6 +27,16 @@ class AuthController:
         except Exception as erro:
             return False, f"Erro inesperado ao cadastrar: {erro}"
 
+    def esqueci_senha(self, ra):
+        try:
+            self.service.enviar_redefinicao_senha(ra)
+            return True, (
+                "Se o RA estiver cadastrado, enviamos um link para o e-mail "
+                "da conta. Confira também a caixa de spam."
+            )
+        except (ValueError, PermissionError, RuntimeError) as erro:
+            return False, str(erro)
+
     def validar_token(self, id_token):
         try:
             usuario = self.service.autenticar_token(id_token)

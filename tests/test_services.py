@@ -240,6 +240,39 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(result["id_token"], "token")
         self.assertEqual(result["usuario"]["perfil"], "professor")
 
+    def test_password_reset_sends_email_of_ra_owner(self):
+        os.environ["FIREBASE_WEB_API_KEY"] = "test-key"
+        chamadas = []
+
+        class RecordingHttp(FakeHttp):
+            def post(self, url, **kwargs):
+                chamadas.append((url, kwargs["json"]))
+                return self.Response()
+
+        AuthService(FakeUserModel(), RecordingHttp()).enviar_redefinicao_senha(" 202600123 ")
+        url, corpo = chamadas[0]
+        self.assertTrue(url.endswith("accounts:sendOobCode"))
+        self.assertEqual(
+            corpo, {"requestType": "PASSWORD_RESET", "email": "usuario@example.com"}
+        )
+
+    def test_password_reset_unknown_ra_is_silent(self):
+        class UnknownUserModel(FakeUserModel):
+            def buscar_por_ra(self, ra):
+                return None
+
+        chamadas = []
+
+        class RecordingHttp(FakeHttp):
+            def post(self, *args, **kwargs):
+                chamadas.append(args)
+                return self.Response()
+
+        AuthService(UnknownUserModel(), RecordingHttp()).enviar_redefinicao_senha("999")
+        self.assertEqual(chamadas, [])
+        with self.assertRaises(ValueError):
+            AuthService(UnknownUserModel(), RecordingHttp()).enviar_redefinicao_senha("  ")
+
 
 if __name__ == "__main__":
     unittest.main()

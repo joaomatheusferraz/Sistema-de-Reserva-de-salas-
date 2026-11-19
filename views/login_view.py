@@ -33,6 +33,42 @@ def _formulario_login():
             st.rerun()
         st.error(mensagem, icon=":material/error:")
 
+    if st.button(
+        "Esqueci minha senha",
+        type="tertiary",
+        icon=":material/key:",
+        key="abrir_esqueci_senha",
+    ):
+        _dialogo_esqueci_senha()
+
+
+@st.dialog("Redefinir senha", icon=":material/lock_reset:")
+def _dialogo_esqueci_senha():
+    st.caption(
+        "Informe o seu RA. Enviaremos um link para o e-mail cadastrado "
+        "na sua conta para você criar uma nova senha."
+    )
+    with st.form("esqueci_senha_form", border=False):
+        ra = st.text_input(
+            "RA",
+            key="esqueci_ra",
+            placeholder="Seu registro acadêmico",
+            icon=":material/badge:",
+        )
+        enviar = st.form_submit_button(
+            "Enviar link",
+            type="primary",
+            icon=":material/send:",
+            width="stretch",
+        )
+    if enviar:
+        with st.spinner("Enviando..."):
+            sucesso, mensagem = AuthController().esqueci_senha(ra)
+        if sucesso:
+            st.success(mensagem, icon=":material/mark_email_read:")
+        else:
+            st.error(mensagem, icon=":material/error:")
+
 
 def _formulario_cadastro():
     with st.form("cadastro_form", border=False):
