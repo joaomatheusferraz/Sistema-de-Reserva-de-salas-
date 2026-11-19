@@ -1,6 +1,7 @@
 import streamlit as st
 
 from controllers.espaco_controller import EspacoController
+from utils.ui import localizacao_texto, tipo_espaco
 
 
 def espacos_view(usuario):
@@ -15,10 +16,7 @@ def espacos_view(usuario):
                 tipo = st.selectbox(
                     "Tipo",
                     ["sala", "laboratorio"],
-                    format_func=lambda valor: {
-                        "sala": "Sala",
-                        "laboratorio": "Laboratório",
-                    }[valor],
+                    format_func=lambda valor: tipo_espaco(valor)[0],
                 )
                 capacidade = st.number_input(
                     "Capacidade",
@@ -72,10 +70,8 @@ def espacos_view(usuario):
         return
 
     for espaco in espacos:
-        with st.expander(f"{espaco.get('nome')} - {espaco.get('tipo')}"):
+        tipo, icone = tipo_espaco(espaco.get("tipo") or "Tipo não informado")
+        with st.expander(f"{espaco.get('nome')} · {tipo}", icon=icone):
             st.write(f"Capacidade: {espaco.get('capacidade')}")
-            localizacao = espaco.get("localizacao", {})
-            bloco = localizacao.get("bloco") or "Não informado"
-            identificacao = localizacao.get("identificacao") or "Não informada"
-            st.write(f"Localização: bloco {bloco}, identificação {identificacao}")
+            st.caption(localizacao_texto(espaco))
             st.write(", ".join(espaco.get("caracteristicas", [])) or "Sem características informadas.")
