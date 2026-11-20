@@ -60,6 +60,9 @@ section[data-testid="stSidebar"] { min-width: 290px !important; max-width: 290px
   padding: .55rem 1.5rem .55rem 2.25rem;
   border-bottom: 1px solid var(--ur-borda);
 }
+/* No Streamlit Cloud a barra de ferramentas (Share, estrela, GitHub) fica
+   no canto superior direito: reserva espaço para ela não cobrir o nome. */
+.stApp:has([data-testid="stToolbarActions"] :is(button, a)) .st-key-topo { padding-right: 15rem; }
 .ur-topo-texto { display: flex; flex-direction: column; line-height: 1.3; color: #1F2937; }
 .ur-topo-texto small { font-size: 12.5px; color: var(--ur-texto-suave); }
 .ur-topo-texto strong { font-size: 15px; font-weight: 700; }
@@ -155,7 +158,9 @@ section[data-testid="stSidebar"] { min-width: 290px !important; max-width: 290px
 [class*="st-key-faixa_cinza"] { background: #E5E7EB; }
 [class*="st-key-faixa_cinza"] p { color: #374151; }
 [class*="st-key-corpo_"] { padding: .9rem 1rem 1rem; gap: .35rem; }
-[class*="st-key-corpo_"] h4 { font-size: 16px; padding: 0; }
+.ur-sala-titulo { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+.ur-sala-titulo strong { font-size: 16px; font-weight: 700; color: #1F2937; line-height: 1.3; }
+.ur-sala-titulo span { font-size: 13.5px; color: var(--ur-texto-suave); white-space: nowrap; }
 [class*="st-key-corpo_"] [data-testid="stCaptionContainer"] p { font-size: 14px; }
 .ur-equip { font-size: 11.5px; font-weight: 600; letter-spacing: .02em; color: #1F2937; margin-top: .4rem; }
 .ur-equip-itens { display: flex; flex-wrap: wrap; gap: .35rem .9rem; font-size: 12.5px; color: #374151; }

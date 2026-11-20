@@ -154,10 +154,14 @@ def card_sala(espaco, reservas, chave, ao_reservar=None, equipamentos=None,
         with st.container(key=f"faixa_{cor_faixa}_{chave}_{eid}"):
             st.markdown(f"●&nbsp; {texto_faixa}")
         with st.container(key=f"corpo_{chave}_{eid}"):
-            with st.container(horizontal=True, vertical_alignment="center"):
-                st.markdown(f"#### {nome}", width="stretch")
-                if localizacao.get("andar"):
-                    st.caption(f"Andar {localizacao['andar']}", width="content")
+            # HTML em vez de st.markdown("####"): o título em markdown tem
+            # margem negativa e cobria a linha de baixo quando não há andar.
+            andar = localizacao.get("andar")
+            st.html(
+                f'<div class="ur-sala-titulo"><strong>{escape(nome)}</strong>'
+                + (f'<span>Andar {escape(str(andar))}</span>' if andar else "")
+                + "</div>"
+            )
             detalhes = [f"Bloco {bloco}" if bloco else tipo_espaco(espaco.get("tipo"))[0]]
             if localizacao.get("identificacao"):
                 detalhes.append(localizacao["identificacao"])
