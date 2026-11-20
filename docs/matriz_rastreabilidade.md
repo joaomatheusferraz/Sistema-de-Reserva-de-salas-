@@ -79,3 +79,41 @@
 | **RF53** | Consulta de reservas pelos alunos | MVP | Atendido | `main.py`, `views/calendario_view.py`, `views/reservas_view.py`, `services/reserva_service.py` | Aluno vê salas e agenda; bloqueado na UI e no serviço para criar reservas. |
 | **RF54** | Consulta de localização de aulas | MVP | Atendido | `views/calendario_view.py` | Aluno pesquisa por professor, atividade ou sala para localizar a aula. |
 | **RF55** | Gerenciamento de usuários externos | MVP | Atendido | `views/coordenador_view.py`, `controllers/usuario_controller.py`, `models/usuario_model.py` | Coordenador define perfil, status ativo e `espacos_autorizados_ids` para externos. |
+
+---
+
+## 3. Rastreabilidade das Regras de Negócio (RN01–RN31)
+
+| ID | Regra de Negócio | Status (`main`) | Onde está no Código / Testes | Lacunas Identificadas |
+|---|---|---|---|---|
+| **RN01** | Níveis de acesso | Parcial | `domain/enums.py`, `main.py`, `services/reserva_service.py`, `tests/test_services.py` | Auto-cadastro (`views/login_view.py`, `services/auth_service.py`) permite qualquer usuário se cadastrar como `professor` sem aprovação. |
+| **RN02** | Reservas no mesmo dia | Atendido | `models/reserva_model.py` (`_sobrepoe`), `tests/test_services.py` | Permite horários adjacentes no mesmo dia; coberto por teste unitário. |
+| **RN03** | Autenticação | Atendido | `main.py`, `utils/session.py`, `services/auth_service.py` | Bloqueia navegação sem login e valida token Firebase. |
+| **RN04** | Permissão de alteração | Atendido | `services/reserva_service.py`, `tests/test_services.py` | Valida dono ou coordenador e impede professor de editar reserva já aprovada. |
+| **RN05** | Permissões administrativas | Parcial | `views/coordenador_view.py`, `services/reserva_service.py`, `services/bloqueio_service.py` | Falta validação de `perfil == "coordenador"` no backend de `EspacoService`, `EquipamentoService` e `UsuarioController`. |
+| **RN06** | Espaços exclusivos | Pendente | — | Apenas externos têm restrição por espaço (`RN28`); não há campo de restrição de perfis no modelo de espaço. |
+| **RN07** | Horário de funcionamento | Parcial | `views/calendario_view.py` (`ABERTURA`/`FECHAMENTO`), `views/reserva_dialogos.py` | `ReservaService` não valida horário de funcionamento (07h–23h) nem bloqueia datas passadas no backend. |
+| **RN08** | Duração máxima | Pendente | — | Não há limite de duração máxima configurado ou validado em `ReservaService`. |
+| **RN09** | Antecedência | Pendente | — | Não há regra de antecedência mínima/máxima validada em `ReservaService`. |
+| **RN10** | Sobreposição | Atendido | `models/reserva_model.py`, `tests/test_services.py` | Garantida por transação no Firestore + `agenda_version` + normalização UTC/BRT. |
+| **RN11** | Cancelamento | Atendido | `services/reserva_service.py` (`cancelar`), `views/reserva_dialogos.py` | Cancela reservas ativas com confirmação e registra histórico/notificação. |
+| **RN12** | Capacidade | Pendente | `services/espaco_service.py` | Capacidade é cadastrada e filtrada, mas não existe campo de número de participantes na reserva para validar limite. |
+| **RN13** | Regras específicas dos laboratórios | Parcial | `services/espaco_service.py`, `views/espacos_view.py` | Campo `regras_especificas` é salvo, mas não é exibido ao usuário antes da reserva. |
+| **RN14** | Equipamentos com autorização | Pendente | `services/equipamento_service.py`, `views/coordenador_view.py` | Flag `exige_autorizacao` existe no cadastro, mas nunca é verificada em `ReservaService`. |
+| **RN15** | Responsável pela reserva | Atendido | `services/reserva_service.py` | Toda reserva valida e vincula `responsavel_id` existente e ativo. |
+| **RN16** | Validação durante alteração | Atendido | `services/reserva_service.py` (`editar`), `models/reserva_model.py` (`atualizar_se_disponivel`) | Revalida sobreposição e bloqueios em transação (melhoria menor: checar também se espaço destino está `ativo=True`). |
+| **RN17** | Espaços indisponíveis | Parcial | `models/reserva_model.py` (`criar_se_disponivel`, `atualizar_se_disponivel`) | **`aprovar_se_disponivel` não verifica bloqueios ativos** criados depois da solicitação pendente. |
+| **RN18** | Bloqueio administrativo | Parcial | `services/bloqueio_service.py`, `views/coordenador_view.py` | Criar bloqueio não verifica se já existem reservas confirmadas/pendentes no mesmo período. |
+| **RN19** | Liberação após cancelamento | Atendido | `models/reserva_model.py` | Apenas status `pendente` e `reservada` ocupam agenda; `cancelada` e `rejeitada` liberam o período automaticamente. |
+| **RN20** | Registro de alterações | Atendido | `services/historico_service.py`, `services/reserva_service.py`, `services/bloqueio_service.py` | Registra criação, alteração, aprovação, rejeição, cancelamento e bloqueio (melhoria: preencher `dados_anteriores` na edição). |
+| **RN21** | Status pendente | Atendido | `services/reserva_service.py`, `tests/test_services.py` | Solicitações de professor/externo nascem `pendente` até análise. |
+| **RN22** | Solicitação pendente não é reserva confirmada | Atendido | `services/reserva_service.py`, `utils/ui.py`, `views/coordenador_view.py` | Diferencia claramente `Pendente` de `Confirmada`/`Reservada` em status, badges e métricas. |
+| **RN23** | Notificações | Atendido | `services/notificacao_service.py`, `views/home_view.py` | Notifica criação, aprovação, rejeição, alteração e cancelamento (avisos institucionais permanecem pendentes). |
+| **RN24** | Bloqueio temporário de solicitações pendentes | Atendido | `models/reserva_model.py` | Checa conflito contra `{"pendente", "reservada"}` dentro da transação. |
+| **RN25** | Aprovação de professores e externos | Atendido | `services/reserva_service.py`, `tests/test_services.py` | Exige `coordenador` para aprovar/rejeitar solicitações pendentes. |
+| **RN26** | Reserva direta do coordenador | Atendido | `services/reserva_service.py`, `tests/test_services.py` | Reserva do coordenador nasce `reservada` com `aprovacao_necessaria=False`. |
+| **RN27** | Finalidade da reserva | Atendido | `services/reserva_service.py` | Obrigatória na criação e edição. |
+| **RN28** | Usuários externos | Atendido | `services/reserva_service.py`, `views/espacos_view.py`, `tests/test_services.py` | Valida `espacos_autorizados_ids` tanto na criação quanto na edição. |
+| **RN29** | Controle de equipamentos | Parcial | `views/coordenador_view.py`, `services/equipamento_service.py` | Restrito ao coordenador na UI, mas `EquipamentoService` ainda não exige `perfil == "coordenador"`. |
+| **RN30** | Consulta por alunos | Atendido | `main.py`, `services/reserva_service.py`, `tests/test_services.py` | Aluno consulta espaços/calendário e recebe `PermissionError` se tentar criar reserva. |
+| **RN31** | Bloqueio durante manutenção | Atendido | `models/reserva_model.py`, `services/bloqueio_service.py` | Impede novas reservas e edições em períodos bloqueados. |
