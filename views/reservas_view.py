@@ -1,9 +1,11 @@
+from collections import Counter
 from datetime import datetime, time
 
 import streamlit as st
 
 from controllers.reserva_controller import ReservaController
 from controllers.espaco_controller import EspacoController
+from utils.ui import localizacao_texto
 
 
 def reservas_view(usuario):
@@ -18,18 +20,28 @@ def reservas_view(usuario):
         except Exception as erro:
             st.error(f"Não foi possível carregar as salas do banco: {erro}")
             espacos = []
-        opcoes = {
-            item["nome"]: item["id"]
-            for item in espacos
-            if item.get("ativo", True)
-        }
+        espacos = [item for item in espacos if item.get("ativo", True)]
+        nomes = Counter(item["nome"] for item in espacos)
+        opcoes = {}
+        for item in espacos:
+            nome = item["nome"]
+            if nomes[nome] > 1:
+                nome = f"{nome} · {localizacao_texto(item)}"
+            opcoes[item["id"]] = nome
+        rotulos = Counter(opcoes.values())
+        for espaco_id, rotulo in opcoes.items():
+            if rotulos[rotulo] > 1:
+                opcoes[espaco_id] = f"{rotulo} ({espaco_id})"
         if not opcoes:
             st.warning(
                 "Não há salas ativas disponíveis. Peça ao coordenador para "
                 "cadastrar ou ativar uma sala em Espaços."
             )
         with st.form("solicitar_reserva", border=True):
-            nome_espaco = st.selectbox("Espaço", list(opcoes)) if opcoes else None
+            espaco_id = (
+                st.selectbox("Espaço", list(opcoes), format_func=opcoes.__getitem__)
+                if opcoes else None
+            )
             data = st.date_input("Data")
             inicio = st.time_input("Horário inicial", value=time(8, 0))
             fim = st.time_input("Horário final", value=time(9, 0))
@@ -40,9 +52,9 @@ def reservas_view(usuario):
                 disabled=not opcoes,
             )
 
-        if enviar and nome_espaco:
+        if enviar and espaco_id:
             sucesso, resultado = controller.criar_reserva(
-                opcoes[nome_espaco],
+                espaco_id,
                 usuario["id"],
                 datetime.combine(data, inicio),
                 datetime.combine(data, fim),
