@@ -1,3 +1,5 @@
+from datetime import timezone
+
 from firebase_admin import firestore
 
 from utils.firebase_utils import init_firestore
@@ -27,7 +29,7 @@ class ReservaModel:
         @firestore.transactional
         def executar(transacao):
             espaco_ref = self.db.collection("espacos").document(espaco_id)
-            espaco = transacao.get(espaco_ref)
+            espaco = espaco_ref.get(transaction=transacao)
             if not espaco.exists:
                 raise ValueError("Espaço não encontrado.")
 
@@ -82,6 +84,12 @@ class ReservaModel:
     def _sobrepoe(inicio_novo, fim_novo, inicio_existente, fim_existente):
         if inicio_existente is None or fim_existente is None:
             return False
+        # O Firestore devolve datetimes com fuso (UTC) e grava datetimes sem
+        # fuso como UTC. Normalizar evita o TypeError ao comparar os dois tipos.
+        inicio_novo, fim_novo, inicio_existente, fim_existente = (
+            valor if valor.tzinfo else valor.replace(tzinfo=timezone.utc)
+            for valor in (inicio_novo, fim_novo, inicio_existente, fim_existente)
+        )
         return (
             inicio_novo < fim_existente
             and fim_novo > inicio_existente
@@ -107,7 +115,7 @@ class ReservaModel:
 
         @firestore.transactional
         def executar(transacao):
-            atual = transacao.get(referencia)
+            atual = referencia.get(transaction=transacao)
             if not atual.exists:
                 raise ValueError("Reserva não encontrada.")
             dados = atual.to_dict()
@@ -115,7 +123,7 @@ class ReservaModel:
                 raise ValueError("Somente reservas pendentes podem ser aprovadas.")
 
             espaco_ref = self.db.collection("espacos").document(dados["espaco_id"])
-            espaco = transacao.get(espaco_ref)
+            espaco = espaco_ref.get(transaction=transacao)
             if not espaco.exists:
                 raise ValueError("Espaço não encontrado.")
 
@@ -156,12 +164,12 @@ class ReservaModel:
 
         @firestore.transactional
         def executar(transacao):
-            atual = transacao.get(referencia)
+            atual = referencia.get(transaction=transacao)
             if not atual.exists:
                 raise ValueError("Reserva não encontrada.")
 
             espaco_ref = self.db.collection("espacos").document(dados["espaco_id"])
-            espaco = transacao.get(espaco_ref)
+            espaco = espaco_ref.get(transaction=transacao)
             if not espaco.exists:
                 raise ValueError("Espaço não encontrado.")
 

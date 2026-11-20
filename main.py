@@ -2,7 +2,7 @@ import streamlit as st
 
 from controllers.auth_controller import AuthController
 from utils.session import autenticado, usuario_atual
-from utils.ui import normalizar_perfil, perfil_badge
+from utils.ui import normalizar_perfil, perfil_badge, registrar_paginas
 from views.calendario_view import calendario_view
 from views.coordenador_view import coordenador_view
 from views.espacos_view import espacos_view
@@ -71,24 +71,21 @@ def app():
     # conta criada manualmente como "Professor" perca a opção de reservar.
     perfil = normalizar_perfil(usuario)
 
-    paginas = {
-        "": [
-            st.Page(pagina_inicio, title="Início", icon=":material/space_dashboard:", url_path="inicio", default=True),
-        ],
-        "Salas": [
-            st.Page(pagina_espacos, title="Espaços", icon=":material/meeting_room:", url_path="espacos"),
-            st.Page(pagina_calendario, title="Calendário", icon=":material/calendar_month:", url_path="calendario"),
-        ],
-    }
+    inicio = st.Page(pagina_inicio, title="Início", icon=":material/space_dashboard:", url_path="inicio", default=True)
+    espacos = st.Page(pagina_espacos, title="Salas e espaços", icon=":material/meeting_room:", url_path="espacos")
+    calendario = st.Page(pagina_calendario, title="Agenda", icon=":material/calendar_month:", url_path="calendario")
+    disponiveis = {"inicio": inicio, "espacos": espacos, "calendario": calendario}
+
+    paginas = {"": [inicio], "Salas": [espacos, calendario]}
     if perfil in {"professor", "externo"}:
-        paginas["Salas"].insert(
-            1,
-            st.Page(pagina_reservas, title="Minhas reservas", icon=":material/event_available:", url_path="reservas"),
-        )
+        reservas = st.Page(pagina_reservas, title="Reservar sala", icon=":material/event_available:", url_path="reservas")
+        paginas["Salas"].insert(0, reservas)
+        disponiveis["reservas"] = reservas
     if perfil == "coordenador":
-        paginas["Gestão"] = [
-            st.Page(pagina_coordenacao, title="Coordenação", icon=":material/fact_check:", url_path="coordenacao"),
-        ]
+        coordenacao = st.Page(pagina_coordenacao, title="Coordenação", icon=":material/fact_check:", url_path="coordenacao")
+        paginas["Gestão"] = [coordenacao]
+        disponiveis["coordenacao"] = coordenacao
+    registrar_paginas(disponiveis)
 
     pagina = st.navigation(paginas)
     barra_lateral(usuario, perfil)

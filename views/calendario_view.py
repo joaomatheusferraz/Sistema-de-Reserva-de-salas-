@@ -1,30 +1,73 @@
+from datetime import timedelta
+
 import streamlit as st
 
-from controllers.reserva_controller import ReservaController
-from controllers.espaco_controller import EspacoController
+from utils.ui import (
+    STATUS,
+    agora,
+    cabecalho,
+    estado_vazio,
+    formatar_data,
+    formatar_hora,
+    para_local,
+)
+from views.componentes import carregar_espacos, carregar_ocupacao
 
 
 def calendario_view(usuario):
-    st.title("Agenda de salas")
-    st.caption("Horários pendentes e confirmados ficam indisponíveis para novas solicitações.")
-    reservas = ReservaController().listar_calendario()
-    if isinstance(reservas, tuple):
-        st.error(reservas[1])
-        return
-    if not reservas:
-        st.info("Nenhum horário ocupado.")
-        return
-    espacos = EspacoController().listar_espacos()
-    nomes = {item["id"]: item.get("nome", item["id"]) for item in espacos}
-    st.dataframe(
-        [
-            {
-                "Espaço": nomes.get(item.get("espaco_id"), item.get("espaco_id")),
-                "Início": item.get("inicio"),
-                "Fim": item.get("fim"),
-                "Status": item.get("status"),
-            }
-            for item in reservas
-        ],
-        hide_index=True,
+    cabecalho(
+        "Agenda de salas",
+        "Horários pendentes e confirmados ficam indisponíveis para novas solicitações.",
+        ":material/calendar_month:",
     )
+    espacos, erro = carregar_espacos()
+    reservas, erro_reservas = carregar_ocupacao()
+    if erro or erro_reservas:
+        st.error(erro or erro_reservas, icon=":material/error:")
+        return
+
+    nomes = {e["id"]: e.get("nome", e["id"]) for e in espacos}
+    preselecao = st.session_state.pop("agenda_espaco_id", None)
+    if preselecao in nomes:
+        st.session_state["agenda_salas"] = [preselecao]
+
+    hoje = agora().date()
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        salas = st.multiselect(
+            "Salas",
+            list(nomes),
+            format_func=nomes.get,
+            placeholder="Todas as salas",
+            key="agenda_salas",
+        )
+        periodo = st.segmented_control(
+            "Período",
+            ["Hoje", "Próximos 7 dias", "Próximos 30 dias"],
+            default="Próximos 7 dias",
+            key="agenda_periodo",
+        ) or "Próximos 7 dias"
+
+    dias = {"Hoje": 0, "Próximos 7 dias": 7, "Próximos 30 dias": 30}[periodo]
+    limite = hoje + timedelta(days=dias)
+
+    linhas = []
+    for r in reservas:
+        inicio = para_local(r.get("inicio"))
+        if not inicio or not (hoje <= inicio.date() <= limite):
+            continue
+        if salas and r.get("espaco_id") not in salas:
+            continue
+        rotulo, _, _ = STATUS.get(r.get("status"), (r.get("status"), None, None))
+        linhas.append({
+            "Dia": formatar_data(r["inicio"], com_dia_semana=True),
+            "Horário": f"{formatar_hora(r['inicio'])}–{formatar_hora(r['fim'])}",
+            "Sala": nomes.get(r.get("espaco_id"), "Sala removida"),
+            "Situação": rotulo,
+        })
+
+    if not linhas:
+        estado_vazio("Nenhum horário ocupado nesse período. Todas as salas estão livres.", ":material/event_available:")
+        return
+
+    st.caption(f"{len(linhas)} horários ocupados")
+    st.dataframe(linhas, hide_index=True)

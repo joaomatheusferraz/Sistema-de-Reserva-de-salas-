@@ -274,5 +274,29 @@ class ServiceTests(unittest.TestCase):
             AuthService(UnknownUserModel(), RecordingHttp()).enviar_redefinicao_senha("  ")
 
 
+    def test_overlap_handles_firestore_timezones(self):
+        from datetime import timezone
+        from models.reserva_model import ReservaModel
+        from utils.ui import FUSO_LOCAL, formatar_hora
+
+        # 11:00 UTC = 08:00 em Brasília, como o Firestore devolve.
+        existente_ini = datetime(2026, 11, 25, 11, 0, tzinfo=timezone.utc)
+        existente_fim = datetime(2026, 11, 25, 12, 0, tzinfo=timezone.utc)
+        nova_ini = datetime(2026, 11, 25, 8, 30, tzinfo=FUSO_LOCAL)
+        nova_fim = datetime(2026, 11, 25, 9, 30, tzinfo=FUSO_LOCAL)
+        self.assertTrue(ReservaModel._sobrepoe(nova_ini, nova_fim, existente_ini, existente_fim))
+        self.assertFalse(ReservaModel._sobrepoe(
+            datetime(2026, 11, 25, 9, 0, tzinfo=FUSO_LOCAL),
+            datetime(2026, 11, 25, 10, 0, tzinfo=FUSO_LOCAL),
+            existente_ini, existente_fim,
+        ))
+        # Valores sem fuso (dados antigos) são tratados como UTC, sem TypeError.
+        self.assertTrue(ReservaModel._sobrepoe(
+            datetime(2026, 11, 25, 11, 30), datetime(2026, 11, 25, 12, 30),
+            existente_ini, existente_fim,
+        ))
+        self.assertEqual(formatar_hora(existente_ini), "08:00")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,12 +1,18 @@
 import streamlit as st
 
 from controllers.espaco_controller import EspacoController
+from utils.ui import cabecalho, estado_vazio, normalizar_perfil, tipo_espaco
+from views.componentes import carregar_ocupacao, grade_salas
 
 
 def espacos_view(usuario):
-    st.title("Espaços")
+    cabecalho(
+        "Salas e espaços",
+        "Veja a situação de cada sala agora e reserve em um clique.",
+        ":material/meeting_room:",
+    )
     controller = EspacoController()
-    perfil = str(usuario.get("perfil", "aluno")).strip().lower()
+    perfil = normalizar_perfil(usuario)
 
     if perfil == "coordenador":
         with st.expander("Cadastrar nova sala", icon=":material/add_business:"):
@@ -53,7 +59,7 @@ def espacos_view(usuario):
                     caracteristicas=caracteristicas,
                 )
                 if sucesso:
-                    st.success("Sala cadastrada com sucesso.")
+                    st.toast("Sala cadastrada com sucesso.", icon=":material/check_circle:")
                     st.rerun()
                 else:
                     st.error(mensagem)
@@ -61,21 +67,58 @@ def espacos_view(usuario):
     try:
         espacos = controller.listar_espacos()
     except Exception:
-        st.error("Não foi possível carregar os espaços.")
+        st.error("Não foi possível carregar os espaços.", icon=":material/error:")
         return
 
     if not espacos:
-        if perfil == "coordenador":
-            st.info("Nenhum espaço ativo cadastrado. Use o formulário acima para cadastrar a primeira sala.")
-        else:
-            st.info("Nenhum espaço ativo cadastrado. Peça ao coordenador para cadastrar uma sala.")
+        estado_vazio(
+            "Nenhum espaço ativo cadastrado. "
+            + ("Use o formulário acima para cadastrar a primeira sala."
+               if perfil == "coordenador" else "Peça ao coordenador para cadastrar uma sala."),
+            ":material/meeting_room:",
+        )
         return
 
-    for espaco in espacos:
-        with st.expander(f"{espaco.get('nome')} - {espaco.get('tipo')}"):
-            st.write(f"Capacidade: {espaco.get('capacidade')}")
-            localizacao = espaco.get("localizacao", {})
-            bloco = localizacao.get("bloco") or "Não informado"
-            identificacao = localizacao.get("identificacao") or "Não informada"
-            st.write(f"Localização: bloco {bloco}, identificação {identificacao}")
-            st.write(", ".join(espaco.get("caracteristicas", [])) or "Sem características informadas.")
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        busca = st.text_input(
+            "Buscar",
+            placeholder="Nome, bloco ou característica",
+            icon=":material/search:",
+            key="espacos_busca",
+        )
+        tipos = st.pills(
+            "Tipo",
+            ["sala", "laboratorio"],
+            format_func=lambda t: tipo_espaco(t)[0],
+            selection_mode="multi",
+            key="espacos_tipos",
+        )
+        capacidade_min = st.number_input(
+            "Mínimo de lugares", min_value=0, step=5, value=0, key="espacos_capacidade"
+        )
+
+    termo = busca.strip().lower()
+
+    def corresponde(espaco):
+        texto = " ".join([
+            str(espaco.get("nome", "")),
+            str((espaco.get("localizacao") or {}).get("bloco", "")),
+            str((espaco.get("localizacao") or {}).get("identificacao", "")),
+            *(espaco.get("caracteristicas") or []),
+        ]).lower()
+        return (
+            (not termo or termo in texto)
+            and (not tipos or espaco.get("tipo") in tipos)
+            and (espaco.get("capacidade") or 0) >= capacidade_min
+        )
+
+    filtrados = [e for e in espacos if corresponde(e)]
+    st.caption(f"{len(filtrados)} de {len(espacos)} espaços")
+    if not filtrados:
+        estado_vazio("Nenhuma sala corresponde aos filtros.", ":material/search_off:")
+        return
+
+    reservas, erro = carregar_ocupacao()
+    if erro:
+        st.warning(erro)
+    grade_salas(filtrados, reservas, "espacos", perfil in {"professor", "externo"})
