@@ -73,3 +73,72 @@ O MVP será considerado pronto para homologação quando todos os critérios aba
 - **Dado** a "Sala Amarela" com reservas `08:00–10:00` (Confirmada) e `13:00–15:00` (Pendente) em uma data
 - **Quando** o usuário filtra a Agenda no modo `Dia` selecionando apenas a "Sala Amarela"
 - **Então** o sistema exibe os intervalos livres (`07:00–08:00`, `10:00–13:00` e `15:00–23:00`) marcados como `Disponível`.
+
+---
+
+### Fluxo 3 — Solicitação, Edição e Cancelamento de Reservas (`RF16–RF27`, `RF47`, `RN02`, `RN04`, `RN10`, `RN16`, `RN19`, `RN21–RN28`)
+
+#### Cenário 3.1: Solicitação de professor nasce Pendente e bloqueia temporariamente o horário (`RN21`, `RN24`, `RN25`, `RN27`)
+- **Dado** um `professor` autenticado e o "Laboratório 02" livre no dia `10/10` das `19:00` às `21:00`
+- **Quando** envia uma solicitação informando finalidade "Aula prática de programação"
+- **Então** a reserva é salva com status `pendente`, gera registro no histórico e notificação ao professor, e uma segunda solicitação para o mesmo laboratório entre `20:00` e `22:00` é recusada por sobreposição.
+
+#### Cenário 3.2: Horários adjacentes são permitidos (`RN02`, `RN10`)
+- **Dado** a "Sala 204" reservada das `18:00` às `20:00`
+- **Quando** um professor solicita a "Sala 204" no mesmo dia das `20:00` às `22:00`
+- **Então** o sistema aceita a solicitação sem erro de conflito.
+
+#### Cenário 3.3: Restrição de espaços para Usuário Externo (`RN28`, `RF55`)
+- **Dado** um `externo` autorizado apenas para o espaço `Auditório`
+- **Quando** tenta reservar o `Laboratório 02` (não autorizado)
+- **Então** o card exibe "Sem autorização" (desabilitado) e o backend rejeita a tentativa com `PermissionError`.
+
+#### Cenário 3.4: Professor não pode editar reserva já aprovada (`RN04`, `RF21`)
+- **Dado** uma reserva de um professor cujo status já foi alterado para `reservada` (aprovada)
+- **Quando** tenta editar a reserva em "Minhas reservas" ou diretamente no serviço
+- **Então** o botão de editar fica desabilitado com orientação ao usuário e o serviço lança `PermissionError`.
+
+#### Cenário 3.5: Cancelamento com confirmação libera o horário (`RF22`, `RF47`, `RN19`)
+- **Dado** uma reserva ativa do professor
+- **Quando** clica em cancelar e confirma no diálogo "Cancelar reserva?"
+- **Então** o status muda para `cancelada`, registra histórico e notificação, e o horário volta a aceitar novas solicitações.
+
+---
+
+### Fluxo 4 — Área do Coordenador, Aprovação, Bloqueios e Equipamentos (`RF32–RF39`, `RF52`, `RN05`, `RN17`, `RN18`, `RN20`, `RN26`, `RN29`, `RN31`)
+
+#### Cenário 4.1: Reserva direta do coordenador (`RN26`)
+- **Dado** um `coordenador` autenticado
+- **Quando** realiza uma reserva para uma sala disponível
+- **Então** a reserva já nasce com status `reservada` (`aprovacao_necessaria = False`), sem entrar na fila de pendentes.
+
+#### Cenário 4.2: Aprovação de solicitação pendente (`RF39`, `RN20`, `RN23`, `RN25`)
+- **Dado** uma solicitação `pendente` na fila da Área do coordenador
+- **Quando** o coordenador clica em aprovar
+- **Então** o status passa a `reservada`, a ação `aprovacao` é gravada no histórico e o solicitante recebe notificação `reserva_aprovada`.
+
+#### Cenário 4.3: Rejeição exige motivo obrigatório e libera o horário (`RF39`, `RN19`, `RN20`, `RN23`)
+- **Dado** uma solicitação `pendente` na fila da Área do coordenador
+- **Quando** o coordenador tenta rejeitar sem preencher o motivo, o sistema recusa; quando informa o motivo e confirma
+- **Então** o status passa a `rejeitada` com o motivo registrado, o horário volta a ficar disponível, o histórico grava `rejeicao` e o solicitante recebe notificação `reserva_rejeitada`.
+
+#### Cenário 4.4: Bloqueio administrativo impede novas reservas e aprovações conflitantes (`RF36`, `RN17`, `RN18`, `RN31`)
+- **Dado** um bloqueio ativo criado pelo coordenador para o "Laboratório 02" de `01/10` a `05/10` por motivo "Manutenção"
+- **Quando** qualquer usuário tenta reservar ou editar uma reserva para esse período, **ou** o coordenador tenta aprovar uma solicitação pendente que colide com o bloqueio
+- **Então** o sistema impede a operação informando que o espaço está bloqueado no período. *(Nota: a verificação de bloqueio na aprovação está registrada como pendência para Devs na matriz de rastreabilidade).*
+
+#### Cenário 4.5: Controle administrativo de equipamentos e espaços (`RF34`, `RF35`, `RF52`, `RN05`, `RN29`)
+- **Dado** um usuário que **não** possui perfil `coordenador`
+- **Quando** tenta cadastrar, editar ou desativar espaços ou equipamentos
+- **Então** o acesso é negado tanto na interface quanto na camada de serviços. *(Nota: reforço de RBAC nos serviços de espaço/equipamento registrado como pendência para Devs).*
+
+---
+
+## 3. Roteiro Rápido de Homologação (Apresentação ao Reitor / Banca)
+
+1. **Login e Visão do Coordenador:** entrar como `coordenador`, cadastrar 1 equipamento (ex.: `Projetor`) e 1 sala/laboratório associado a esse equipamento; criar 1 reserva direta e confirmar que nasce como `Confirmada`.
+2. **Fluxo do Professor:** entrar como `professor`, filtrar a sala por capacidade + equipamento, solicitar reserva com finalidade e confirmar status `Pendente`.
+3. **Prevenção de Conflito:** tentar solicitar o mesmo horário (ou parcial) com outro usuário e comprovar o bloqueio automático por sobreposição.
+4. **Aprovação / Rejeição e Notificação:** voltar como `coordenador`, aprovar a solicitação (e testar uma rejeição com motivo); entrar novamente como `professor` e comprovar a notificação na tela inicial e o status `Confirmada`.
+5. **Bloqueio Temporário:** como `coordenador`, bloquear a sala por manutenção e comprovar que ela aparece como `Bloqueado` na agenda e recusa novas reservas.
+6. **Visão do Aluno:** entrar como `aluno`, pesquisar pelo nome do professor na Agenda para localizar a sala da aula e confirmar que não há opção de criar/editar/cancelar reservas.
