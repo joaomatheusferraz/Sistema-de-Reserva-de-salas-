@@ -117,3 +117,21 @@
 | **RN29** | Controle de equipamentos | Parcial | `views/coordenador_view.py`, `services/equipamento_service.py` | Restrito ao coordenador na UI, mas `EquipamentoService` ainda não exige `perfil == "coordenador"`. |
 | **RN30** | Consulta por alunos | Atendido | `main.py`, `services/reserva_service.py`, `tests/test_services.py` | Aluno consulta espaços/calendário e recebe `PermissionError` se tentar criar reserva. |
 | **RN31** | Bloqueio durante manutenção | Atendido | `models/reserva_model.py`, `services/bloqueio_service.py` | Impede novas reservas e edições em períodos bloqueados. |
+
+---
+
+## 4. Encaminhamento de Pendências no Kanban (Por Papel)
+
+### Para Desenvolvedores (Many / Jadson)
+1. **[Alta — Segurança / RN01]** Restringir o perfil padrão no auto-cadastro (`login_view.py` / `auth_service.py`) para impedir auto-promoção para `professor`.
+2. **[Alta — Integridade / RN17 e RN18]** Verificar `bloqueios` ativos dentro de `ReservaModel.aprovar_se_disponivel` e alertar sobre reservas conflitantes ao criar um bloqueio em `BloqueioService.criar`.
+3. **[Média — Segurança / RN05 e RN29]** Adicionar checagem de perfil `coordenador` em `EspacoService`, `EquipamentoService` e `UsuarioService`.
+4. **[Média — Performance]** Eliminar consulta N+1 de `_historico` dentro dos 50 expanders em `views/coordenador_view.py` (carregar histórico sob demanda) e adicionar validação de horário no passado em `ReservaService`.
+5. **[Baixa — Alinhamento RF46/RN13/RF40]** Exibir `regras_especificas` no diálogo de reserva e definir se `curso` (em `perfil_view.py`) será editável ou removido.
+
+### Para Qualidade e Testes (Caio / `Solu-o`)
+1. **[Urgente — PR `#1`]** Antes de fazer merge da branch `qa/melhorias-backend-e-testes` na `main`, atualizar com `main` e **migrar o método `atualizar_contato`** (criado recentemente na `main` para `views/perfil_view.py`) para `UsuarioService` e `UsuarioController`, evitando quebra na edição de perfil.
+2. **[Média]** Cobrir em testes automatizados os cenários negativos documentados em [docs/criterios_aceitacao.md](criterios_aceitacao.md) (especialmente bloqueio × aprovação e remoção de arquivos legados `login.py` e `views/usuario_view.py`).
+
+### Para UX e Prototipação (Amadio)
+1. **[Baixa]** Alinhar a exibição de `regras_especificas` de laboratórios no modal de reserva (`RF46`/`RN13`) e decidir o formato de avisos institucionais no banner inicial (`RF51`).
