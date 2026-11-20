@@ -6,8 +6,15 @@ from utils.ui import localizacao_texto, tipo_espaco
 
 def espacos_view(usuario):
     st.title("Espaços")
-    controller = EspacoController()
     perfil = str(usuario.get("perfil", "aluno")).strip().lower()
+    if st.session_state.pop("espaco_cadastrado", False):
+        st.success("Espaço cadastrado com sucesso.")
+
+    try:
+        controller = EspacoController()
+    except Exception:
+        st.error("Não foi possível carregar os espaços.")
+        return
 
     if perfil == "coordenador":
         with st.expander("Cadastrar nova sala", icon=":material/add_business:"):
@@ -51,7 +58,7 @@ def espacos_view(usuario):
                     caracteristicas=caracteristicas,
                 )
                 if sucesso:
-                    st.success("Sala cadastrada com sucesso.")
+                    st.session_state["espaco_cadastrado"] = True
                     st.rerun()
                 else:
                     st.error(mensagem)
