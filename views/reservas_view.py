@@ -142,7 +142,11 @@ def _formulario(usuario, perfil, espacos, ocupacao, controller):
 
 
 def _minhas_solicitacoes(usuario, perfil, espacos, controller):
-    reservas = controller.listar_reservas_do_responsavel(usuario["id"])
+    try:
+        reservas = controller.listar_reservas_do_responsavel(usuario["id"])
+    except Exception:
+        st.error("Não foi possível carregar suas solicitações. Tente novamente mais tarde.", icon=":material/error:")
+        return
     if isinstance(reservas, tuple):
         st.error(reservas[1])
         return

@@ -11,8 +11,15 @@ def espacos_view(usuario):
         "Veja a situação de cada sala agora e reserve em um clique.",
         ":material/meeting_room:",
     )
-    controller = EspacoController()
     perfil = normalizar_perfil(usuario)
+    if st.session_state.pop("espaco_cadastrado", False):
+        st.success("Sala cadastrada com sucesso.", icon=":material/check_circle:")
+
+    try:
+        controller = EspacoController()
+    except Exception:
+        st.error("Não foi possível carregar os espaços.", icon=":material/error:")
+        return
 
     if perfil == "coordenador":
         with st.expander("Cadastrar nova sala", icon=":material/add_business:"):
@@ -56,7 +63,7 @@ def espacos_view(usuario):
                     caracteristicas=caracteristicas,
                 )
                 if sucesso:
-                    st.toast("Sala cadastrada com sucesso.", icon=":material/check_circle:")
+                    st.session_state["espaco_cadastrado"] = True
                     st.rerun()
                 else:
                     st.error(mensagem)
