@@ -1,27 +1,34 @@
+"""Início: banner em carrossel e atalhos grandes (protótipo do Figma)."""
+
 import streamlit as st
 
 from controllers.notificacao_controller import NotificacaoController
-from controllers.reserva_controller import ReservaController
-from utils.ui import (
-    agora,
-    estado_vazio,
-    formatar_data,
-    formatar_periodo,
-    ir_para,
-    normalizar_perfil,
-    pagina_disponivel,
-    para_local,
-    situacao_sala,
-    status_badge,
-)
-from views.componentes import (
-    carregar_equipamentos,
-    carregar_espacos,
-    carregar_ocupacao,
-    grade_salas,
-)
+from utils.ui import cabecalho, formatar_data, ir_para, pagina_disponivel
 
-PODEM_RESERVAR = {"professor", "externo", "coordenador"}
+SLIDES = [
+    (
+        "Reserve salas em poucos cliques",
+        "Encontre salas e laboratórios livres, filtre por capacidade e equipamentos e faça sua reserva na hora.",
+        "calendar_month",
+    ),
+    (
+        "Acompanhe suas reservas",
+        "Veja o status de cada solicitação e gerencie seus horários em um só lugar.",
+        "format_list_bulleted",
+    ),
+    (
+        "Agenda sempre atualizada",
+        "Consulte a ocupação de cada sala por dia, semana ou mês e descubra onde é cada aula.",
+        "event_note",
+    ),
+]
+
+ATALHOS = [
+    # (página, rótulo, ícone, chave do botão)
+    ("espacos", "Reservar sala", ":material/calendar_today:", "acao_salas"),
+    ("reservas", "Minhas reservas", ":material/format_list_bulleted:", "acao_minhas"),
+    ("coordenacao", "Área do coordenador", ":material/settings:", "acao_coordenador"),
+]
 
 ICONES_NOTIFICACAO = {
     "reserva_criada": (":material/send:", "blue"),
@@ -32,121 +39,52 @@ ICONES_NOTIFICACAO = {
 }
 
 
-ACOES = [
-    # (página, rótulo, ícone, destaque)
-    ("reservas", "Reservar uma sala", ":material/add_circle:", True),
-    ("coordenacao", "Analisar solicitações", ":material/fact_check:", True),
-    ("espacos", "Ver salas", ":material/meeting_room:", False),
-    ("calendario", "Agenda", ":material/calendar_month:", False),
-]
+def _mudar_slide(passo):
+    st.session_state["banner_slide"] = (st.session_state.get("banner_slide", 1) + passo) % len(SLIDES)
 
 
 def home_view(usuario):
-    perfil = normalizar_perfil(usuario)
-    primeiro_nome = (usuario.get("nome") or "usuário").split()[0]
-    hoje = agora()
+    cabecalho("Início")
+    _banner()
+    st.space("medium")
 
-    st.title(f"Olá, {primeiro_nome}", icon=":material/waving_hand:", anchor=False)
-    st.caption(f"{formatar_data(hoje, com_dia_semana=True)} · {hoje:%H:%M}")
-
-    # Ações rápidas: só aparecem as páginas liberadas para o perfil.
-    with st.container(horizontal=True, gap="small"):
-        for pagina, rotulo, icone, destaque in ACOES:
-            if pagina_disponivel(pagina):
-                if st.button(
-                    rotulo,
-                    icon=icone,
-                    type="primary" if destaque else "secondary",
-                    key=f"acao_{pagina}",
-                ):
+    with st.container(horizontal_alignment="center"):
+        with st.container(width=900, gap="medium"):
+            atalhos = [a for a in ATALHOS if pagina_disponivel(a[0])]
+            if not pagina_disponivel("reservas"):
+                # Alunos não reservam: o atalho leva às salas e à agenda.
+                atalhos[0] = ("espacos", "Salas", ":material/meeting_room:", "acao_salas")
+                atalhos.append(("calendario", "Agenda", ":material/calendar_month:", "acao_agenda"))
+            for pagina, rotulo, icone, chave in atalhos:
+                if st.button(rotulo, icon=icone, key=chave, width="stretch"):
                     ir_para(pagina)
 
-    _notificacoes(usuario)
-
-    espacos, erro_espacos = carregar_espacos()
-    reservas, erro_reservas = carregar_ocupacao()
-    if erro_espacos or erro_reservas:
-        st.error(erro_espacos or erro_reservas, icon=":material/error:")
-
-    livres = [
-        e for e in espacos
-        if situacao_sala(e["id"], reservas, hoje)[0] == "Livre agora"
-    ]
-    hoje_reservas = [
-        r for r in reservas
-        if not r.get("bloqueio")
-        and r.get("inicio") and para_local(r["inicio"]).date() == hoje.date()
-    ]
-
-    with st.container(horizontal=True):
-        st.metric("Salas ativas", len(espacos), border=True)
-        st.metric("Livres agora", len(livres), border=True)
-        st.metric("Reservas hoje", len(hoje_reservas), border=True)
-        _metrica_do_perfil(usuario, perfil, reservas)
-
-    st.subheader("Salas disponíveis", anchor=False)
-    if not espacos:
-        estado_vazio(
-            "Nenhuma sala cadastrada ainda."
-            + (" Cadastre a primeira em Salas e espaços." if perfil == "coordenador" else ""),
-            icone=":material/meeting_room:",
-        )
-    else:
-        filtro = st.segmented_control(
-            "Mostrar",
-            ["Livres agora", "Todas"],
-            default="Livres agora",
-            key="home_filtro_salas",
-            label_visibility="collapsed",
-        )
-        lista = livres if filtro == "Livres agora" else espacos
-        if lista:
-            grade_salas(
-                lista, reservas, "home", perfil in PODEM_RESERVAR,
-                equipamentos=carregar_equipamentos(),
-            )
-        else:
-            estado_vazio("Todas as salas estão ocupadas neste momento.", ":material/event_busy:")
-
-    if perfil in PODEM_RESERVAR:
-        _proximas_reservas(usuario, espacos)
+            _notificacoes(usuario)
 
 
-def _metrica_do_perfil(usuario, perfil, reservas):
-    if perfil == "coordenador":
-        pendentes = sum(1 for r in reservas if r.get("status") == "pendente")
-        st.metric("Aguardando análise", pendentes, border=True)
-    if perfil in PODEM_RESERVAR and perfil != "coordenador":
-        minhas = [r for r in reservas if r.get("responsavel_id") == usuario.get("id")]
-        st.metric("Minhas reservas ativas", len(minhas), border=True)
-
-
-def _proximas_reservas(usuario, espacos):
-    st.subheader("Minhas próximas reservas", anchor=False)
-    reservas = ReservaController().listar_reservas_do_responsavel(usuario["id"])
-    if isinstance(reservas, tuple):
-        st.error(reservas[1])
-        return
-    momento = agora()
-    proximas = sorted(
-        (
-            r for r in reservas
-            if r.get("status") in {"pendente", "reservada"}
-            and r.get("fim") and para_local(r["fim"]) >= momento
-        ),
-        key=lambda r: r["inicio"],
-    )[:3]
-    if not proximas:
-        estado_vazio("Você não tem reservas futuras.", ":material/event_available:")
-        return
-    nomes = {e["id"]: e.get("nome", e["id"]) for e in espacos}
-    for reserva in proximas:
-        with st.container(border=True, horizontal=True, vertical_alignment="center"):
-            st.markdown(
-                f"**{nomes.get(reserva['espaco_id'], 'Sala removida')}**  \n"
-                f":material/schedule: {formatar_periodo(reserva['inicio'], reserva['fim'])}"
-            )
-            status_badge(reserva.get("status"))
+def _banner():
+    atual = st.session_state.setdefault("banner_slide", 1)
+    titulo, texto, icone = SLIDES[atual]
+    with st.container(horizontal_alignment="center"):
+        with st.container(key="banner", width=1230):
+            with st.container(horizontal=True, vertical_alignment="center"):
+                with st.container(width="stretch", gap="small"):
+                    st.markdown(f"## {titulo}")
+                    st.markdown(texto, width=560)
+                with st.container(key="banner_icone", horizontal_alignment="center",
+                                  vertical_alignment="center", width=116, height=116, border=False):
+                    st.html(f'<span class="ur-icone ur-icone-banner">{icone}</span>', width="content")
+            st.space("medium")
+            with st.container(key="banner_nav", horizontal=True, vertical_alignment="center",
+                              gap="xsmall", width="content"):
+                st.button("", icon=":material/chevron_left:", type="tertiary", key="banner_ant",
+                          on_click=_mudar_slide, args=(-1,), help="Anterior")
+                pontos = "".join(
+                    f'<span class="{"ativo" if i == atual else ""}"></span>' for i in range(len(SLIDES))
+                )
+                st.html(f'<div class="ur-pontos">{pontos}</div>', width="content")
+                st.button("", icon=":material/chevron_right:", type="tertiary", key="banner_prox",
+                          on_click=_mudar_slide, args=(1,), help="Próximo")
 
 
 def _notificacoes(usuario):
@@ -155,7 +93,7 @@ def _notificacoes(usuario):
     nao_lidas = controller.listar_do_usuario(usuario["id"], apenas_nao_lidas=True)
     if not nao_lidas:
         return
-    with st.container(border=True):
+    with st.container(key="card_notificacoes"):
         with st.container(horizontal=True, vertical_alignment="center"):
             st.markdown(f"**:material/notifications_active: Notificações** :red-badge[{len(nao_lidas)} nova(s)]")
             if st.button("Marcar todas como lidas", icon=":material/done_all:", key="notif_todas", type="tertiary"):

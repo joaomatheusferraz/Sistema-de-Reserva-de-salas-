@@ -91,6 +91,21 @@ class UsuarioModel:
 
         self.collection.document(usuario_id).update(documento)
 
+    def atualizar_contato(self, usuario_id, email, telefone, email_anterior=None):
+        """Atualiza e-mail/telefone do próprio usuário.
+
+        O login busca o e-mail no Firestore e autentica no Firebase Auth com
+        ele, então um e-mail novo precisa ser gravado nos dois lugares.
+        """
+        if email != email_anterior:
+            from firebase_admin import auth
+            auth.update_user(usuario_id, email=email)
+        self.collection.document(usuario_id).update({
+            "email": email,
+            "telefone": telefone,
+            "updated_at": firestore.SERVER_TIMESTAMP,
+        })
+
     def atualizar_autorizacoes(self, usuario_id, espacos_ids):
         self.collection.document(usuario_id).update({
             "espacos_autorizados_ids": list(espacos_ids),

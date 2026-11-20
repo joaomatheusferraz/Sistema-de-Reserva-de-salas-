@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40" viewBox="0 0 200 40">
+  <rect x="2" y="3" width="34" height="34" rx="7" fill="#FFFFFF"/>
+  <g fill="none" stroke="#5B2380" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M10 13.5c3-1.4 6.2-1.4 9 .6v13.4c-2.8-2-6-2-9-.6z"/>
+    <path d="M28 13.5c-3-1.4-6.2-1.4-9 .6v13.4c2.8-2 6-2 9-.6z"/>
+  </g>
+  <text x="46" y="28" fill="#FFFFFF" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="21" font-weight="800" font-style="italic">UniReserve</text>
+</svg>

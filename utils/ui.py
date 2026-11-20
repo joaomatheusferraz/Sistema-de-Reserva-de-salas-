@@ -1,6 +1,7 @@
 """Componentes visuais compartilhados entre as telas do UniReserve."""
 
 from datetime import date, datetime, time, timedelta, timezone
+from uuid import uuid4
 
 import streamlit as st
 
@@ -110,14 +111,60 @@ def localizacao_texto(espaco):
     return " · ".join(partes) or "Localização não informada"
 
 
+CORES_AVATAR = ["#5B2380", "#2F6BB8", "#0F766E", "#B45309", "#BE185D", "#4338CA", "#15803D"]
+
+
+def iniciais(nome):
+    partes = [p for p in str(nome or "").split() if p]
+    if not partes:
+        return "?"
+    if len(partes) == 1:
+        return partes[0][:2].upper()
+    return (partes[0][0] + partes[-1][0]).upper()
+
+
+def avatar_html(nome, tamanho=28):
+    """Círculo colorido com as iniciais (o sistema não guarda fotos)."""
+    cor = CORES_AVATAR[sum(map(ord, str(nome or ""))) % len(CORES_AVATAR)]
+    fonte = max(10, int(tamanho * 0.38))
+    return (
+        f'<span class="ur-avatar" style="width:{tamanho}px;height:{tamanho}px;'
+        f'background:{cor};font-size:{fonte}px">{iniciais(nome)}</span>'
+    )
+
+
+def rotulo_perfil(perfil):
+    return PERFIS.get(perfil, (str(perfil).title(),))[0]
+
+
+def situacao_reserva(reserva, momento=None):
+    """Status exibido em "Minhas reservas": (rótulo, cor do badge).
+
+    Reservas confirmadas cujo horário já passou aparecem como concluídas.
+    """
+    momento = momento or agora()
+    status = reserva.get("status")
+    terminou = isinstance(reserva.get("fim"), datetime) and para_local(reserva["fim"]) < momento
+    if status == "reservada":
+        return ("Concluída", "blue") if terminou else ("Confirmada", "green")
+    if status == "pendente":
+        return ("Expirada", "gray") if terminou else ("Pendente", "yellow")
+    if status == "rejeitada":
+        return "Recusada", "red"
+    if status == "cancelada":
+        return "Cancelada", "red"
+    return str(status or "—").title(), "gray"
+
+
 def cabecalho(titulo, descricao=None, icone=None):
-    st.title(titulo, icon=icone, anchor=False)
+    # O protótipo usa títulos sem ícone; o parâmetro fica por compatibilidade.
+    st.title(titulo, anchor=False)
     if descricao:
         st.caption(descricao)
 
 
 def estado_vazio(mensagem, icone=":material/inbox:"):
-    with st.container(border=True, horizontal_alignment="center"):
+    with st.container(horizontal_alignment="center", key=f"card_vazio_{uuid4().hex[:8]}"):
         st.markdown(f"### {icone}", text_alignment="center")
         st.caption(mensagem, text_alignment="center")
 

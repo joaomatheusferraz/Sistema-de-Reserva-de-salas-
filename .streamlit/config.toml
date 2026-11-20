@@ -1,51 +1,39 @@
+# Tema baseado no protótipo do Figma: barra lateral roxa, fundo cinza-azulado
+# e cards brancos. O app usa sempre o tema claro para ficar igual ao protótipo.
+
+[client]
+toolbarMode = "minimal"
+
 [theme]
-font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap"
+base = "light"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500;1,700&display=swap"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap"
 baseFontSize = 15
-headingFontWeights = [700, 650, 600, 600, 600, 600]
-headingFontSizes = ["30px", "22px", "18px", "16px", "14px", "13px"]
-baseRadius = "12px"
-buttonRadius = "10px"
+headingFontWeights = [700, 700, 600, 600, 600, 600]
+headingFontSizes = ["28px", "20px", "17px", "15px", "14px", "13px"]
+baseRadius = "8px"
+buttonRadius = "6px"
 showWidgetBorder = true
-showSidebarBorder = true
+showSidebarBorder = false
 linkUnderline = false
 
-[theme.light]
-primaryColor = "#4F46E5"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F5F6FB"
-textColor = "#1E1B3A"
-borderColor = "#E3E5F0"
-dataframeHeaderBackgroundColor = "#F5F6FB"
+primaryColor = "#2563EB"
+backgroundColor = "#EEF2F7"
+secondaryBackgroundColor = "#F3F6FA"
+textColor = "#1F2937"
+borderColor = "#E2E8F0"
+dataframeHeaderBackgroundColor = "#F3F6FA"
 blueColor = "#2563EB"
 greenColor = "#16A34A"
+yellowColor = "#CA8A04"
 orangeColor = "#D97706"
 redColor = "#DC2626"
 violetColor = "#7C3AED"
 grayColor = "#64748B"
-chartCategoricalColors = ["#4F46E5", "#16A34A", "#D97706", "#DB2777", "#0891B2", "#7C3AED", "#64748B"]
 
-[theme.light.sidebar]
-backgroundColor = "#F5F6FB"
-secondaryBackgroundColor = "#ECEEF8"
-borderColor = "#E3E5F0"
-
-[theme.dark]
-primaryColor = "#6366F1"
-backgroundColor = "#0F1020"
-secondaryBackgroundColor = "#1A1C33"
-textColor = "#E7E8F5"
-borderColor = "#2B2E4A"
-dataframeHeaderBackgroundColor = "#1A1C33"
-blueColor = "#60A5FA"
-greenColor = "#4ADE80"
-orangeColor = "#FBBF24"
-redColor = "#F87171"
-violetColor = "#A78BFA"
-grayColor = "#94A3B8"
-chartCategoricalColors = ["#818CF8", "#4ADE80", "#FBBF24", "#F472B6", "#22D3EE", "#A78BFA", "#94A3B8"]
-
-[theme.dark.sidebar]
-backgroundColor = "#0B0C18"
-secondaryBackgroundColor = "#16182C"
-borderColor = "#2B2E4A"
+[theme.sidebar]
+backgroundColor = "#5B2380"
+secondaryBackgroundColor = "#6E3396"
+textColor = "#FFFFFF"
+borderColor = "#6E3396"
+primaryColor = "#FFFFFF"

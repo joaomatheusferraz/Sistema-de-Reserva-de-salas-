@@ -1,4 +1,5 @@
 from datetime import time, timedelta
+from html import escape
 
 import streamlit as st
 
@@ -10,10 +11,12 @@ from utils.ui import (
     PERFIS,
     STATUS,
     agora,
+    avatar_html,
     cabecalho,
     combinar_local,
     estado_vazio,
     formatar_data,
+    formatar_hora,
     formatar_periodo,
     normalizar_perfil,
     para_local,
@@ -21,6 +24,7 @@ from utils.ui import (
     status_badge,
 )
 from views.componentes import carregar_espacos, rotulos_unicos
+from views.espacos_view import dialogo_nova_sala
 
 ACOES_HISTORICO = {
     "criacao": ("Criada", ":material/add_circle:"),
@@ -30,6 +34,12 @@ ACOES_HISTORICO = {
     "cancelamento": ("Cancelada", ":material/event_busy:"),
 }
 
+SECOES = ["Solicitações pendentes", "Todas as reservas", "Bloqueios", "Equipamentos", "Usuários"]
+
+
+def _abrir_secao(secao):
+    st.session_state["coord_secao"] = secao
+
 
 def coordenador_view(usuario):
     perfil = normalizar_perfil(usuario)
@@ -37,11 +47,7 @@ def coordenador_view(usuario):
         st.error("Acesso restrito ao coordenador.", icon=":material/lock:")
         return
 
-    cabecalho(
-        "Coordenação",
-        "Analise solicitações, acompanhe todas as reservas e administre espaços, equipamentos e usuários.",
-        ":material/fact_check:",
-    )
+    cabecalho("Área do coordenador")
     if mensagem := st.session_state.pop("coord_mensagem", None):
         st.success(mensagem, icon=":material/check_circle:")
 
@@ -53,6 +59,14 @@ def coordenador_view(usuario):
     if isinstance(pendentes, tuple):
         st.error(pendentes[1])
         pendentes = []
+    todas = reservas_ctrl.listar_todas(perfil)
+    todas = [] if isinstance(todas, tuple) else todas
+    momento = agora()
+    ativas = [
+        r for r in todas
+        if r.get("status") == "reservada" and r.get("fim") and para_local(r["fim"]) >= momento
+    ]
+    salas_ativas = [e for e in espacos if e.get("ativo", True)]
 
     ctx = {
         "usuario": usuario,
@@ -61,25 +75,47 @@ def coordenador_view(usuario):
         "nomes_espacos": rotulos_unicos(espacos),
         "nomes_usuarios": {u["id"]: u.get("nome") or "Sem nome" for u in usuarios},
         "reservas": reservas_ctrl,
+        "todas": todas,
     }
 
-    abas = st.tabs([
-        f":material/pending_actions: Solicitações ({len(pendentes)})",
-        ":material/list_alt: Todas as reservas",
-        ":material/block: Bloqueios",
-        ":material/devices: Equipamentos",
-        f":material/group: Usuários ({len(usuarios)})",
-    ])
-    with abas[0]:
+    # ---- Indicadores ----
+    with st.container(horizontal=True, gap="medium"):
+        _metrica("pendentes", "Solicitações pendentes", len(pendentes), "Ver todas",
+                 lambda: _abrir_secao("Solicitações pendentes"))
+        _metrica("ativas", "Reservas ativas", len(ativas), "Ver todas reservas",
+                 lambda: _abrir_secao("Todas as reservas"))
+        if _metrica("salas", "Salas/Laboratórios ativos", len(salas_ativas), "Criar nova sala"):
+            dialogo_nova_sala()
+
+    st.space("small")
+    secao = st.segmented_control(
+        "Seção", SECOES, default=SECOES[0], key="coord_secao", label_visibility="collapsed",
+    ) or SECOES[0]
+
+    if secao == "Solicitações pendentes":
         _solicitacoes(ctx, pendentes)
-    with abas[1]:
-        _todas_reservas(ctx)
-    with abas[2]:
-        _bloqueios(ctx)
-    with abas[3]:
-        _equipamentos()
-    with abas[4]:
-        _usuarios(ctx, usuarios, usuarios_ctrl)
+    elif secao == "Todas as reservas":
+        with st.container(key="card_todas"):
+            _todas_reservas(ctx)
+    elif secao == "Bloqueios":
+        with st.container(key="card_bloqueios"):
+            _bloqueios(ctx)
+    elif secao == "Equipamentos":
+        with st.container(key="card_equipamentos"):
+            _equipamentos()
+    else:
+        with st.container(key="card_usuarios"):
+            _usuarios(ctx, usuarios, usuarios_ctrl)
+
+
+def _metrica(chave, titulo, valor, rotulo_botao, ao_clicar=None):
+    with st.container(key=f"card_metrica_{chave}", gap="small"):
+        st.caption(titulo)
+        st.markdown(f"## ({valor})")
+        return st.button(
+            rotulo_botao, type="primary", key=f"metrica_{chave}",
+            on_click=ao_clicar,
+        )
 
 
 def _concluir(ok, mensagem):
@@ -92,18 +128,46 @@ def _concluir(ok, mensagem):
 # ---------------------------------------------------------------------------
 # Solicitações pendentes
 
+COLUNAS_PENDENTES = [5, 1.3, 1.6, 1]
+
+
 def _solicitacoes(ctx, pendentes):
-    if not pendentes:
-        estado_vazio("Nenhuma solicitação pendente. Tudo em dia!", ":material/task_alt:")
-        return
-    for reserva in sorted(pendentes, key=lambda r: r["inicio"]):
-        rid = reserva["id"]
-        with st.container(border=True):
-            _resumo_reserva(ctx, reserva)
-            with st.container(horizontal=True, gap="small"):
-                if st.button("Aprovar", icon=":material/check_circle:", type="primary", key=f"aprovar_{rid}"):
+    with st.container(key="card_pendentes"):
+        st.markdown("### Solicitações pendentes")
+        if not pendentes:
+            st.caption("Nenhuma solicitação pendente. Tudo em dia!")
+            return
+        with st.container(key="cabecalho_tabela_pendentes"):
+            colunas = st.columns(COLUNAS_PENDENTES, vertical_alignment="center")
+            for coluna, titulo in zip(colunas, ["Nome", "Recurso", "Data/Hora", "Ações"]):
+                coluna.markdown(f"<small>{titulo}</small>", unsafe_allow_html=True,
+                                text_alignment="center" if titulo == "Ações" else "left")
+        for reserva in sorted(pendentes, key=lambda r: r["inicio"]):
+            _linha_pendente(ctx, reserva)
+
+
+def _linha_pendente(ctx, reserva):
+    rid = reserva["id"]
+    nome = ctx["nomes_usuarios"].get(reserva.get("responsavel_id"), "Usuário removido")
+    with st.container(key=f"linha_pendente_{rid}"):
+        pessoa, recurso, quando, acoes = st.columns(COLUNAS_PENDENTES, vertical_alignment="center")
+        finalidade = escape(reserva.get("finalidade") or "")
+        pessoa.markdown(
+            f'<div class="ur-pessoa">{avatar_html(nome, 30)}<div>{escape(nome)}'
+            + (f'<br><span style="color:#64748B;font-size:12.5px">{finalidade}</span>' if finalidade else "")
+            + "</div></div>",
+            unsafe_allow_html=True,
+        )
+        recurso.markdown(ctx["nomes_espacos"].get(reserva.get("espaco_id"), "Sala removida"))
+        quando.markdown(
+            f"{formatar_hora(reserva['inicio'])}-{formatar_hora(reserva['fim'])}  \n"
+            f":gray[{formatar_data(reserva['inicio'])}]"
+        )
+        with acoes:
+            with st.container(horizontal=True, gap="small", horizontal_alignment="center"):
+                if st.button("", icon=":material/check:", key=f"aprovar_{rid}", help="Aprovar"):
                     _concluir(*ctx["reservas"].aprovar_reserva(rid, ctx["usuario"]["id"], ctx["perfil"]))
-                if st.button("Rejeitar", icon=":material/cancel:", key=f"rejeitar_{rid}"):
+                if st.button("", icon=":material/close:", key=f"rejeitar_{rid}", help="Rejeitar"):
                     _rejeitar(ctx, rid)
 
 
@@ -128,7 +192,7 @@ def _rejeitar(ctx, reserva_id):
 # Todas as reservas (RF37, RF38) + histórico (seção 20)
 
 def _todas_reservas(ctx):
-    reservas = ctx["reservas"].listar_todas(ctx["perfil"])
+    reservas = ctx["todas"]
     if isinstance(reservas, tuple):
         st.error(reservas[1])
         return
