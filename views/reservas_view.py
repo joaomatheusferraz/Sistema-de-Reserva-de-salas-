@@ -16,7 +16,7 @@ from utils.ui import (
     status_badge,
     tipo_espaco,
 )
-from views.componentes import carregar_espacos, carregar_ocupacao
+from views.componentes import carregar_espacos, carregar_ocupacao, rotulos_unicos
 
 
 def reservas_view(usuario):
@@ -62,6 +62,7 @@ def _formulario(usuario, perfil, espacos, ocupacao, controller):
         return
 
     por_id = {e["id"]: e for e in espacos}
+    rotulos = rotulos_unicos(espacos)
     preselecao = st.session_state.pop("reserva_espaco_id", None)
     if preselecao in por_id:
         st.session_state["reserva_sala"] = preselecao
@@ -70,7 +71,7 @@ def _formulario(usuario, perfil, espacos, ocupacao, controller):
         espaco_id = st.selectbox(
             "Sala",
             list(por_id),
-            format_func=lambda i: f"{por_id[i].get('nome')} · {por_id[i].get('capacidade')} lugares",
+            format_func=lambda i: f"{rotulos[i]} · {por_id[i].get('capacidade')} lugares",
             key="reserva_sala",
         )
         dia = st.date_input(
@@ -167,7 +168,7 @@ def _minhas_solicitacoes(usuario, perfil, espacos, controller):
         estado_vazio("Nada por aqui.", ":material/inbox:")
         return
 
-    nomes = {e["id"]: e.get("nome", e["id"]) for e in espacos}
+    nomes = rotulos_unicos(espacos)
     for reserva in lista:
         with st.container(border=True):
             with st.container(horizontal=True, vertical_alignment="center"):

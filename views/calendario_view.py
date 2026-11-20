@@ -11,7 +11,7 @@ from utils.ui import (
     formatar_hora,
     para_local,
 )
-from views.componentes import carregar_espacos, carregar_ocupacao
+from views.componentes import carregar_espacos, carregar_ocupacao, rotulos_unicos
 
 
 def calendario_view(usuario):
@@ -20,13 +20,16 @@ def calendario_view(usuario):
         "Horários pendentes e confirmados ficam indisponíveis para novas solicitações.",
         ":material/calendar_month:",
     )
-    espacos, erro = carregar_espacos()
     reservas, erro_reservas = carregar_ocupacao()
-    if erro or erro_reservas:
-        st.error(erro or erro_reservas, icon=":material/error:")
+    if erro_reservas:
+        st.error(erro_reservas, icon=":material/error:")
         return
+    # Inclui salas desativadas para que reservas antigas continuem com nome.
+    espacos, erro = carregar_espacos(apenas_ativos=False)
+    if erro:
+        st.warning("Não foi possível carregar os nomes das salas.", icon=":material/warning:")
 
-    nomes = {e["id"]: e.get("nome", e["id"]) for e in espacos}
+    nomes = rotulos_unicos(espacos)
     preselecao = st.session_state.pop("agenda_espaco_id", None)
     if preselecao in nomes:
         st.session_state["agenda_salas"] = [preselecao]
@@ -36,7 +39,7 @@ def calendario_view(usuario):
         salas = st.multiselect(
             "Salas",
             list(nomes),
-            format_func=nomes.get,
+            format_func=lambda i: nomes.get(i, i),
             placeholder="Todas as salas",
             key="agenda_salas",
         )

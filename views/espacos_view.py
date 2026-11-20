@@ -21,10 +21,7 @@ def espacos_view(usuario):
                 tipo = st.selectbox(
                     "Tipo",
                     ["sala", "laboratorio"],
-                    format_func=lambda valor: {
-                        "sala": "Sala",
-                        "laboratorio": "Laboratório",
-                    }[valor],
+                    format_func=lambda valor: tipo_espaco(valor)[0],
                 )
                 capacidade = st.number_input(
                     "Capacidade",

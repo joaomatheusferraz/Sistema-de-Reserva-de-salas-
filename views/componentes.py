@@ -1,5 +1,7 @@
 """Blocos visuais reutilizados pelas telas (cards de sala, carregamento de dados)."""
 
+from collections import Counter
+
 import streamlit as st
 
 from controllers.espaco_controller import EspacoController
@@ -13,19 +15,37 @@ from utils.ui import (
 )
 
 
-def carregar_espacos():
+def carregar_espacos(apenas_ativos=True):
     try:
-        return EspacoController().listar_espacos(), None
+        return EspacoController().listar_espacos(apenas_ativos=apenas_ativos), None
     except Exception:
         return [], "Não foi possível carregar as salas do banco de dados."
 
 
 def carregar_ocupacao():
     """Reservas pendentes e confirmadas (as que ocupam horário)."""
-    reservas = ReservaController().listar_calendario()
+    try:
+        reservas = ReservaController().listar_calendario()
+    except Exception:
+        return [], "Não foi possível carregar a agenda. Tente novamente mais tarde."
     if isinstance(reservas, tuple):
         return [], reservas[1]
     return reservas or [], None
+
+
+def rotulos_unicos(espacos):
+    """Nome de cada sala; salas homônimas recebem a localização (e o id, se preciso)."""
+    repeticoes = Counter(e.get("nome") for e in espacos)
+    rotulos = {
+        e["id"]: e.get("nome") if repeticoes[e.get("nome")] == 1
+        else f"{e.get('nome')} · {localizacao_texto(e)}"
+        for e in espacos
+    }
+    repeticoes = Counter(rotulos.values())
+    return {
+        espaco_id: rotulo if repeticoes[rotulo] == 1 else f"{rotulo} ({espaco_id})"
+        for espaco_id, rotulo in rotulos.items()
+    }
 
 
 def card_sala(espaco, reservas, chave, permite_reservar):
