@@ -136,3 +136,48 @@ Centralizar e organizar o processo de **consulta, solicitação, aprovação e g
 | **RF53** | Consulta de reservas pelos alunos | Permitir que alunos visualizem reservas existentes, sem permitir que realizem ou alterem reservas. | `[MVP]` |
 | **RF54** | Consulta de localização de aulas | Permitir que alunos utilizem as informações de reservas para identificar o espaço utilizado em determinada aula ou atividade. | `[MVP]` |
 | **RF55** | Gerenciamento de usuários externos | Permitir que coordenadores gerenciem usuários externos autorizados. | `[MVP]` |
+
+---
+
+## 6. Regras de Negócio Consolidadas (RN01–RN31)
+
+| ID | Regra de Negócio | Especificação |
+|---|---|---|
+| **RN01** | Níveis de acesso | Cada perfil possuirá permissões específicas de acordo com sua função. *Refinamento de segurança:* o auto-cadastro não deve conceder privilégios elevados (`professor` ou `coordenador`) sem validação/aprovação da coordenação. |
+| **RN02** | Reservas no mesmo dia | Uma sala ou laboratório poderá possuir várias reservas no mesmo dia desde que os horários não se sobreponham (horários adjacentes, como `18h–20h` e `20h–22h`, são permitidos). |
+| **RN03** | Autenticação | Somente usuários autenticados poderão realizar operações que exigem autenticação. |
+| **RN04** | Permissão de alteração | Usuários somente poderão editar ou cancelar reservas que possuam permissão para alterar (professores/externos só editam reservas `Pendente`; reservas já aprovadas só podem ser alteradas pela coordenação). |
+| **RN05** | Permissões administrativas | Coordenadores possuirão permissões administrativas sobre o sistema, validadas também na camada de serviços (não apenas ocultando botões na interface). |
+| **RN06** | Espaços exclusivos | Determinados espaços poderão ser restritos a perfis específicos. |
+| **RN07** | Horário de funcionamento | As reservas deverão respeitar os horários de funcionamento definidos pela instituição (referência padrão do calendário: `07h00` às `23h00`), e não podem ser criadas para horários já transcorridos. |
+| **RN08** | Duração máxima | A instituição poderá estabelecer duração máxima para reservas. |
+| **RN09** | Antecedência | A instituição poderá estabelecer um limite de antecedência para solicitações. |
+| **RN10** | Sobreposição | O sistema deverá impedir reservas com sobreposição de horários para o mesmo espaço. |
+| **RN11** | Cancelamento | Cancelamentos deverão respeitar as regras estabelecidas pela instituição. |
+| **RN12** | Capacidade | A utilização do ambiente deverá respeitar sua capacidade máxima. |
+| **RN13** | Regras específicas dos laboratórios | Laboratórios poderão possuir regras específicas de utilização, que devem ser visíveis ao solicitante antes da confirmação da reserva. |
+| **RN14** | Equipamentos com autorização | Determinados equipamentos poderão exigir autorização específica para uso. |
+| **RN15** | Responsável pela reserva | Toda reserva deverá estar vinculada ao usuário responsável. |
+| **RN16** | Validação durante alteração | Alterações deverão verificar novamente a disponibilidade do espaço (contra reservas ativas, bloqueios e status ativo do espaço). |
+| **RN17** | Espaços indisponíveis | Usuários não poderão reservar espaços indisponíveis, desativados ou bloqueados. *Refinamento:* a aprovação de uma solicitação `Pendente` também deve verificar se não surgiu um bloqueio ativo no período. |
+| **RN18** | Bloqueio administrativo | Coordenadores poderão bloquear espaços para manutenção, eventos ou outras situações autorizadas. *Refinamento:* ao bloquear um período, o sistema deve verificar reservas já existentes no intervalo para ciência/tratamento administrativo. |
+| **RN19** | Liberação após cancelamento | Uma reserva cancelada (ou rejeitada) deverá liberar o período correspondente. |
+| **RN20** | Registro de alterações | Alterações relevantes (criação, alteração, aprovação, rejeição, cancelamento, bloqueio) deverão ser registradas no histórico. |
+| **RN21** | Status pendente | Solicitações que necessitem de aprovação deverão permanecer como `Pendente` até serem aceitas ou rejeitadas. |
+| **RN22** | Solicitação pendente não é reserva confirmada | Uma solicitação pendente não será considerada uma reserva confirmada até sua aprovação. |
+| **RN23** | Notificações | O sistema poderá apresentar notificações relacionadas às reservas e avisos institucionais. |
+| **RN24** | Bloqueio temporário de solicitações pendentes | Uma solicitação pendente deverá bloquear temporariamente o período solicitado, impedindo outra solicitação para o mesmo espaço e período. |
+| **RN25** | Aprovação de professores e externos | Solicitações realizadas por professores e usuários externos deverão ser aprovadas por um coordenador. |
+| **RN26** | Reserva direta do coordenador | Reservas realizadas diretamente pelo coordenador não necessitarão de aprovação. |
+| **RN27** | Finalidade da reserva | Reservas realizadas por professores e usuários externos deverão possuir uma finalidade informada. |
+| **RN28** | Usuários externos | Usuários externos somente poderão utilizar os espaços para os quais possuam autorização explícita da coordenação. |
+| **RN29** | Controle de equipamentos | Somente coordenadores poderão cadastrar, editar ou desativar tipos de equipamentos. |
+| **RN30** | Consulta por alunos | Alunos poderão visualizar informações de reservas, mas não poderão criar, editar ou cancelar reservas. |
+| **RN31** | Bloqueio durante manutenção | Um espaço bloqueado não poderá receber novas reservas durante o período determinado. |
+
+---
+
+## 7. Fronteira de Escopo: MVP × Pós-MVP
+
+- **Incluído no MVP:** Login por RA (`RF01–RF03`), perfis e controle de acesso, consulta/pesquisa/filtros de salas e laboratórios, calendário geral e por sala com horários livres/ocupados, fluxo completo de reserva/aprovação/rejeição/edição/cancelamento com finalidade e bloqueio temporário de pendentes, bloqueios administrativos, gestão de espaços/equipamentos/usuários externos, histórico de alterações, notificações de reserva e consulta por alunos.
+- **Explicitamente fora do MVP (Funcionalidades Futuras):** Mapa 2D (`RF10`, `RF45`), Mapa 3D (`RF11`), Chat completo (`RF28`, `RF29`), reservas recorrentes/permanentes (solicitadas diretamente à coordenação), integrações externas, automação avançada de regras e relatórios gerenciais avançados.
