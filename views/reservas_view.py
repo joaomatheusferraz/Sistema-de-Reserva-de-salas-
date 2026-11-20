@@ -5,13 +5,14 @@ import streamlit as st
 
 from controllers.reserva_controller import ReservaController
 from controllers.espaco_controller import EspacoController
-from utils.ui import localizacao_texto
+from utils.ui import formatar_periodo, localizacao_texto, status_badge
 
 
 def reservas_view(usuario):
     st.title("Reservas")
     perfil = str(usuario.get("perfil", "aluno")).strip().lower()
     controller = ReservaController()
+    nomes_espacos = {}
 
     if perfil in {"professor", "externo"}:
         st.subheader("Solicitar reserva")
@@ -21,6 +22,7 @@ def reservas_view(usuario):
             st.error(f"Não foi possível carregar as salas do banco: {erro}")
             espacos = []
         espacos = [item for item in espacos if item.get("ativo", True)]
+        nomes_espacos = {item["id"]: item["nome"] for item in espacos}
         nomes = Counter(item["nome"] for item in espacos)
         opcoes = {}
         for item in espacos:
@@ -87,7 +89,8 @@ def reservas_view(usuario):
     try:
         reservas = controller.listar_reservas_do_responsavel(usuario["id"])
     except Exception:
-        reservas = []
+        st.error("Não foi possível carregar suas solicitações. Tente novamente mais tarde.")
+        return
     if isinstance(reservas, tuple):
         st.error(reservas[1])
         return
@@ -95,7 +98,8 @@ def reservas_view(usuario):
         st.info("Nenhuma reserva encontrada.")
         return
     for reserva in reservas:
-        st.write(
-            f"{reserva.get('espaco_id')} | {reserva.get('inicio')} até "
-            f"{reserva.get('fim')} | {reserva.get('status')}"
-        )
+        espaco_id = reserva.get("espaco_id")
+        with st.container(border=True, gap="xsmall"):
+            st.text(nomes_espacos.get(espaco_id) or espaco_id or "Espaço não informado")
+            st.caption(formatar_periodo(reserva.get("inicio"), reserva.get("fim")))
+            status_badge(reserva.get("status") or "Status não informado")
