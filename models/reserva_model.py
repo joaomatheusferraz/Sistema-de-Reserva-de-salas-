@@ -236,6 +236,14 @@ class ReservaModel:
             reservas.append(dados)
         return reservas
 
+    def listar_todas(self):
+        reservas = []
+        for documento in self.collection.stream():
+            dados = documento.to_dict()
+            dados["id"] = documento.id
+            reservas.append(dados)
+        return sorted(reservas, key=lambda item: item.get("inicio"), reverse=True)
+
     def listar_ativas(self):
         reservas = []
         consulta = self.collection.where(

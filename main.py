@@ -77,7 +77,7 @@ def app():
     disponiveis = {"inicio": inicio, "espacos": espacos, "calendario": calendario}
 
     paginas = {"": [inicio], "Salas": [espacos, calendario]}
-    if perfil in {"professor", "externo"}:
+    if perfil in {"professor", "externo", "coordenador"}:
         reservas = st.Page(pagina_reservas, title="Reservar sala", icon=":material/event_available:", url_path="reservas")
         paginas["Salas"].insert(0, reservas)
         disponiveis["reservas"] = reservas

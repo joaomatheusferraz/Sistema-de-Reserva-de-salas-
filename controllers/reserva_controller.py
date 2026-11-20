@@ -46,6 +46,18 @@ class ReservaController:
         except (ValueError, TypeError, PermissionError) as erro:
             return False, str(erro)
 
+    def listar_todas(self, perfil):
+        try:
+            return self.service.listar_todas(perfil)
+        except (ValueError, TypeError, PermissionError) as erro:
+            return False, str(erro)
+
+    def historico_da_reserva(self, reserva_id, perfil):
+        try:
+            return self.service.historico_da_reserva(reserva_id, perfil)
+        except (ValueError, TypeError, PermissionError) as erro:
+            return False, str(erro)
+
     def listar_calendario(self):
         try:
             return self.service.listar_calendario()

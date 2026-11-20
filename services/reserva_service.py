@@ -13,6 +13,11 @@ class ReservaService:
 
     STATUS_PENDENTE = "pendente"
     STATUS_RESERVADA = "reservada"
+    PERFIS_QUE_RESERVAM = {
+        Perfil.PROFESSOR.value,
+        Perfil.EXTERNO.value,
+        Perfil.COORDENADOR.value,
+    }
 
     def __init__(
         self,
@@ -51,22 +56,23 @@ class ReservaService:
         if perfil_usuario != perfil:
             raise ValueError("O perfil informado não corresponde ao usuário.")
 
-        if perfil not in {Perfil.PROFESSOR.value, Perfil.EXTERNO.value}:
-            raise PermissionError("Somente professor ou usuário externo pode solicitar reserva.")
-        if perfil == Perfil.EXTERNO.value:
-            autorizados = usuario.get("espacos_autorizados_ids", [])
-            if autorizados and espaco_id not in autorizados:
-                raise PermissionError("Usuário externo não tem acesso a esse espaço.")
+        if perfil not in self.PERFIS_QUE_RESERVAM:
+            raise PermissionError(
+                "Somente professor, usuário externo ou coordenador pode reservar."
+            )
+        self._exigir_autorizacao_externo(usuario, espaco_id, perfil)
 
+        # RN26: reserva do coordenador já nasce confirmada, sem aprovação.
+        direta = perfil == Perfil.COORDENADOR.value
         dados = {
             "espaco_id": espaco_id,
             "responsavel_id": responsavel_id,
             "inicio": inicio,
             "fim": fim,
             "finalidade": finalidade.strip(),
-            "status": self.STATUS_PENDENTE,
-            "aprovacao_necessaria": True,
-            "analisada_por_id": None,
+            "status": self.STATUS_RESERVADA if direta else self.STATUS_PENDENTE,
+            "aprovacao_necessaria": not direta,
+            "analisada_por_id": responsavel_id if direta else None,
             "motivo_rejeicao": None,
         }
         reserva_id = self.model.criar_se_disponivel(dados)
@@ -79,10 +85,30 @@ class ReservaService:
         self._notificar(
             responsavel_id,
             "reserva_criada",
-            "Sua solicitação de reserva foi criada.",
+            "Sua reserva foi registrada e já está confirmada."
+            if direta else "Sua solicitação de reserva foi enviada e aguarda aprovação.",
             reserva_id,
         )
         return reserva_id
+
+    @staticmethod
+    def _exigir_autorizacao_externo(usuario, espaco_id, perfil):
+        """RN28: externo só usa espaços que a coordenação autorizou."""
+        if perfil != Perfil.EXTERNO.value:
+            return
+        if espaco_id not in (usuario.get("espacos_autorizados_ids") or []):
+            raise PermissionError("Usuário externo não tem autorização para esse espaço.")
+
+    def listar_todas(self, perfil):
+        self._exigir_coordenador(perfil)
+        return self.model.listar_todas()
+
+    def historico_da_reserva(self, reserva_id, perfil):
+        self._exigir_coordenador(perfil)
+        return sorted(
+            self.historico.listar_por_entidade("reserva", reserva_id),
+            key=lambda item: str(item.get("created_at") or ""),
+        )
 
     def listar_do_responsavel(self, responsavel_id):
         if not texto_obrigatorio(responsavel_id):
@@ -165,6 +191,16 @@ class ReservaService:
         )
         if reserva.get("status") in {"rejeitada", "cancelada"}:
             raise ValueError("Essa reserva não pode ser editada.")
+        if perfil != Perfil.COORDENADOR.value and reserva.get("status") != self.STATUS_PENDENTE:
+            raise PermissionError(
+                "Reservas já aprovadas só podem ser alteradas pela coordenação."
+            )
+        if perfil == Perfil.EXTERNO.value:
+            self._exigir_autorizacao_externo(
+                self.usuario_model.buscar(responsavel_id) or {},
+                dados.get("espaco_id"),
+                perfil,
+            )
         self._validar_dados(
             dados.get("espaco_id"),
             reserva.get("responsavel_id"),

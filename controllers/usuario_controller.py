@@ -85,6 +85,13 @@ class UsuarioController:
 
             return False, f"Erro ao atualizar usuário: {erro}"
 
+    def atualizar_autorizacoes(self, usuario_id, espacos_ids):
+        try:
+            self.model.atualizar_autorizacoes(usuario_id, espacos_ids)
+            return True, "Espaços autorizados atualizados!"
+        except Exception as erro:
+            return False, f"Erro ao salvar autorizações: {erro}"
+
     def excluir_usuario(self, usuario_id):
 
         try:

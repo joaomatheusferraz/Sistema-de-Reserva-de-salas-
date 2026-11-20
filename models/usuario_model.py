@@ -45,6 +45,7 @@ class UsuarioModel:
                 "ra": dados.get("ra"),
                 "perfil": dados.get("perfil", "aluno"),
                 "ativo": dados.get("ativo", True),
+                "espacos_autorizados_ids": dados.get("espacos_autorizados_ids", []),
                 "created_at": dados.get("created_at"),
                 "updated_at": dados.get("updated_at")
             })
@@ -89,6 +90,12 @@ class UsuarioModel:
         }
 
         self.collection.document(usuario_id).update(documento)
+
+    def atualizar_autorizacoes(self, usuario_id, espacos_ids):
+        self.collection.document(usuario_id).update({
+            "espacos_autorizados_ids": list(espacos_ids),
+            "updated_at": firestore.SERVER_TIMESTAMP,
+        })
 
     # DELETE
     def excluir(self, usuario_id):

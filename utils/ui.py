@@ -21,6 +21,7 @@ STATUS = {
     "reservada": ("Confirmada", ":material/check_circle:", "green"),
     "rejeitada": ("Rejeitada", ":material/cancel:", "red"),
     "cancelada": ("Cancelada", ":material/block:", "gray"),
+    "bloqueado": ("Bloqueado", ":material/lock:", "violet"),
 }
 
 TIPOS_ESPACO = {
@@ -154,6 +155,9 @@ def situacao_sala(espaco_id, reservas, momento=None):
     for reserva in da_sala:
         if para_local(reserva["inicio"]) <= momento < para_local(reserva["fim"]):
             fim = formatar_hora(reserva["fim"])
+            if reserva.get("status") == "bloqueado":
+                ate = formatar_data(reserva["fim"]) if para_local(reserva["fim"]).date() != momento.date() else fim
+                return "Bloqueada", ":material/lock:", "violet", f"{reserva.get('motivo') or 'bloqueio da coordenação'} · até {ate}"
             if reserva.get("status") == "reservada":
                 return "Ocupada", ":material/do_not_disturb_on:", "red", f"até {fim}"
             return "Pré-reservada", ":material/schedule:", "orange", f"aguardando aprovação · até {fim}"
@@ -164,9 +168,13 @@ def situacao_sala(espaco_id, reservas, momento=None):
 
 
 def reservas_do_dia(espaco_id, reservas, dia):
+    """Períodos que tocam o dia (inclui bloqueios de vários dias)."""
+    inicio_dia = datetime.combine(dia, time(0, 0), tzinfo=FUSO_LOCAL)
+    fim_dia = inicio_dia + timedelta(days=1)
     return sorted(
         (r for r in reservas if r.get("espaco_id") == espaco_id
          and isinstance(r.get("inicio"), datetime)
-         and para_local(r["inicio"]).date() == dia),
+         and para_local(r["inicio"]) < fim_dia
+         and para_local(r["fim"]) > inicio_dia),
         key=lambda r: r["inicio"],
     )

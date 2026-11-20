@@ -18,6 +18,9 @@ class BloqueioController:
         except (ValueError, TypeError, PermissionError) as erro:
             return False, str(erro)
 
+    def listar_vigentes(self):
+        return self.service.listar_vigentes()
+
     def remover_bloqueio(self, bloqueio_id, perfil, executado_por_id):
         try:
             self.service.remover(bloqueio_id, perfil, executado_por_id)

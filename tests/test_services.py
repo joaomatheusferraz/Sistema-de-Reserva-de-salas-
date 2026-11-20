@@ -155,11 +155,13 @@ class ServiceTests(unittest.TestCase):
         )
         self.assertEqual(self.reservation_model.data["r2"]["status"], "pendente")
 
+        # RN26: reserva do coordenador já nasce confirmada, sem aprovação.
         coordinator = self.make_reservation_service(FakeUserModel("coordenador"))
-        with self.assertRaises(PermissionError):
-            coordinator.criar(
-                "e1", "u1", self.inicio, self.fim, "reuniao", "coordenador"
-            )
+        coordinator.criar(
+            "e1", "u1", self.inicio, self.fim, "reuniao", "coordenador"
+        )
+        self.assertEqual(self.reservation_model.data["r2"]["status"], "reservada")
+        self.assertFalse(self.reservation_model.data["r2"]["aprovacao_necessaria"])
 
         student = self.make_reservation_service(FakeUserModel("aluno"))
         with self.assertRaises(PermissionError):
@@ -170,10 +172,13 @@ class ServiceTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             service.criar("e1", "u1", self.inicio, self.fim, "evento", "externo")
 
-        unrestricted = self.make_reservation_service(FakeUserModel("externo"))
-        unrestricted.criar(
-            "e1", "u1", self.inicio, self.fim, "evento", "externo"
-        )
+        # RN28: sem espaços autorizados, o externo não reserva nada.
+        sem_autorizacao = self.make_reservation_service(FakeUserModel("externo"))
+        with self.assertRaises(PermissionError):
+            sem_autorizacao.criar("e1", "u1", self.inicio, self.fim, "evento", "externo")
+
+        autorizado = self.make_reservation_service(FakeUserModel("externo", ["e1"]))
+        autorizado.criar("e1", "u1", self.inicio, self.fim, "evento", "externo")
         self.assertEqual(self.reservation_model.data["r2"]["status"], "pendente")
 
     def test_students_can_consult_calendar_but_not_create(self):
@@ -296,6 +301,24 @@ class ServiceTests(unittest.TestCase):
             existente_ini, existente_fim,
         ))
         self.assertEqual(formatar_hora(existente_ini), "08:00")
+
+
+    def test_teacher_cannot_edit_approved_reservation(self):
+        service = self.make_reservation_service()
+        self.reservation_model.data["r1"]["status"] = "reservada"
+        dados = {"espaco_id": "e1", "inicio": self.inicio, "fim": self.fim, "finalidade": "aula"}
+        with self.assertRaises(PermissionError):
+            service.editar("r1", "u1", "professor", dados)
+        self.reservation_model.data["r1"]["status"] = "pendente"
+        service.editar("r1", "u1", "professor", dados)
+        self.assertEqual(self.reservation_model.data["r1"]["finalidade"], "aula")
+
+    def test_only_coordinator_lists_all_reservations(self):
+        service = self.make_reservation_service()
+        self.reservation_model.listar_todas = lambda: list(self.reservation_model.data.values())
+        self.assertEqual(len(service.listar_todas("coordenador")), 1)
+        with self.assertRaises(PermissionError):
+            service.listar_todas("professor")
 
 
 if __name__ == "__main__":

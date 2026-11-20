@@ -4,6 +4,8 @@ from collections import Counter
 
 import streamlit as st
 
+from controllers.bloqueio_controller import BloqueioController
+from controllers.equipamento_controller import EquipamentoController
 from controllers.espaco_controller import EspacoController
 from controllers.reserva_controller import ReservaController
 from utils.ui import (
@@ -23,14 +25,52 @@ def carregar_espacos(apenas_ativos=True):
 
 
 def carregar_ocupacao():
-    """Reservas pendentes e confirmadas (as que ocupam horário)."""
+    """Tudo que ocupa horário: reservas pendentes/confirmadas e bloqueios.
+
+    Bloqueios entram com status "bloqueado" para que cards, agenda e
+    formulário de reserva os tratem como mais um período indisponível.
+    """
     try:
         reservas = ReservaController().listar_calendario()
     except Exception:
         return [], "Não foi possível carregar a agenda. Tente novamente mais tarde."
     if isinstance(reservas, tuple):
         return [], reservas[1]
-    return reservas or [], None
+    try:
+        bloqueios = BloqueioController().listar_vigentes()
+    except Exception:
+        bloqueios = []
+    ocupacao = list(reservas or []) + [
+        {
+            "id": b["id"],
+            "espaco_id": b.get("espaco_id"),
+            "inicio": b.get("inicio"),
+            "fim": b.get("fim"),
+            "status": "bloqueado",
+            "motivo": b.get("motivo"),
+            "bloqueio": True,
+        }
+        for b in bloqueios
+        if b.get("inicio") and b.get("fim")
+    ]
+    return sorted(ocupacao, key=lambda r: r["inicio"]), None
+
+
+def carregar_equipamentos(apenas_ativos=True):
+    try:
+        return {
+            e["id"]: e for e in EquipamentoController().listar_equipamentos(apenas_ativos)
+        }
+    except Exception:
+        return {}
+
+
+def nomes_equipamentos(espaco, equipamentos):
+    return [
+        equipamentos[i]["nome"]
+        for i in espaco.get("equipamentos_ids") or []
+        if i in equipamentos
+    ]
 
 
 def rotulos_unicos(espacos):
@@ -48,7 +88,7 @@ def rotulos_unicos(espacos):
     }
 
 
-def card_sala(espaco, reservas, chave, permite_reservar):
+def card_sala(espaco, reservas, chave, permite_reservar, equipamentos=None, ao_editar=None):
     """Card com ícone, situação atual e botões de ação de uma sala."""
     rotulo_tipo, icone_tipo = tipo_espaco(espaco.get("tipo"))
     situacao, icone_sit, cor_sit, detalhe = situacao_sala(espaco["id"], reservas)
@@ -64,6 +104,9 @@ def card_sala(espaco, reservas, chave, permite_reservar):
             f":material/groups: **{espaco.get('capacidade', '—')}** lugares  \n"
             f":material/location_on: {localizacao_texto(espaco)}"
         )
+        equipamentos_sala = nomes_equipamentos(espaco, equipamentos or {})
+        if equipamentos_sala:
+            st.markdown(" ".join(f":blue-badge[{nome}]" for nome in equipamentos_sala))
         caracteristicas = espaco.get("caracteristicas") or []
         if caracteristicas:
             st.caption(" · ".join(caracteristicas))
@@ -85,11 +128,19 @@ def card_sala(espaco, reservas, chave, permite_reservar):
                 width="stretch",
             ):
                 ir_para("calendario", agenda_espaco_id=espaco["id"])
+            if ao_editar and st.button(
+                "Editar",
+                icon=":material/edit:",
+                key=f"editar_{chave}_{espaco['id']}",
+                width="stretch",
+            ):
+                ao_editar(espaco)
 
 
-def grade_salas(espacos, reservas, chave, permite_reservar, colunas=3):
+def grade_salas(espacos, reservas, chave, permite_reservar, colunas=3,
+                equipamentos=None, ao_editar=None):
     for inicio in range(0, len(espacos), colunas):
         linha = st.columns(colunas)
         for coluna, espaco in zip(linha, espacos[inicio:inicio + colunas]):
             with coluna:
-                card_sala(espaco, reservas, chave, permite_reservar)
+                card_sala(espaco, reservas, chave, permite_reservar, equipamentos, ao_editar)

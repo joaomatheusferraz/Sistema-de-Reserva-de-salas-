@@ -54,6 +54,10 @@ class BloqueioService:
         self._exigir_coordenador(perfil)
         return self.model.listar(apenas_ativos=apenas_ativos)
 
+    def listar_vigentes(self):
+        """Bloqueios ativos, para todos os perfis verem na agenda (seção 8)."""
+        return self.model.listar(apenas_ativos=True)
+
     def remover(self, bloqueio_id, perfil, executado_por_id):
         self._exigir_coordenador(perfil)
         if not texto_obrigatorio(bloqueio_id):
