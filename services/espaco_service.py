@@ -28,10 +28,19 @@ class EspacoService:
             "regras_especificas": regras_especificas or [],
         })
 
+    def buscar(self, espaco_id):
+        if not texto_obrigatorio(espaco_id):
+            raise ValueError("ID do espaço inválido.")
+        return self.model.buscar(espaco_id)
+
     def listar(self, apenas_ativos=True):
         return self.model.listar(apenas_ativos=apenas_ativos)
 
     def atualizar(self, espaco_id, dados):
+        if not texto_obrigatorio(espaco_id):
+            raise ValueError("ID do espaço inválido.")
+        if not dados or not isinstance(dados, dict):
+            raise ValueError("Dados de atualização inválidos.")
         if not texto_obrigatorio(dados.get("nome")):
             raise ValueError("Informe o nome do espaço.")
         if dados.get("tipo") not in {item.value for item in TipoEspaco}:
@@ -41,4 +50,6 @@ class EspacoService:
         self.model.atualizar(espaco_id, dados)
 
     def excluir(self, espaco_id):
+        if not texto_obrigatorio(espaco_id):
+            raise ValueError("ID do espaço inválido.")
         self.model.excluir(espaco_id)

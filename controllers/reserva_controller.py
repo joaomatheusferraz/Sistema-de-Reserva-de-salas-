@@ -30,7 +30,10 @@ class ReservaController:
 
     def buscar_reserva(self, reserva_id):
         try:
-            return self.service.buscar(reserva_id)
+            reserva = self.service.buscar(reserva_id)
+            if not reserva:
+                return False, "Reserva não encontrada."
+            return True, reserva
         except (ValueError, TypeError) as erro:
             return False, str(erro)
 

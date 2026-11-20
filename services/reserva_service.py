@@ -280,6 +280,3 @@ class ReservaService:
             Perfil.EXTERNO.value,
         }:
             raise ValueError("Perfil inválido.")
-        if perfil in {Perfil.PROFESSOR.value, Perfil.EXTERNO.value} \
-                and not texto_obrigatorio(finalidade):
-            raise ValueError("Informe a finalidade da reserva.")
