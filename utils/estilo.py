@@ -60,9 +60,17 @@ section[data-testid="stSidebar"] { min-width: 290px !important; max-width: 290px
   padding: .55rem 1.5rem .55rem 2.25rem;
   border-bottom: 1px solid var(--ur-borda);
 }
-/* No Streamlit Cloud a barra de ferramentas (Share, estrela, GitHub) fica
-   no canto superior direito: reserva espaço para ela não cobrir o nome. */
-.stApp:has([data-testid="stToolbarActions"] :is(button, a)) .st-key-topo { padding-right: 15rem; }
+/* No Streamlit Cloud a barra de ferramentas (Share, estrela, GitHub) ficava
+   no canto superior direito, por cima do nome do usuário. Ela vai para o
+   canto inferior direito, logo acima do botão "Manage app" do Cloud. */
+[data-testid="stToolbar"] {
+  position: fixed !important; top: auto !important; left: auto !important;
+  right: 1rem !important; bottom: 4rem !important; z-index: 999990;
+}
+[data-testid="stToolbar"]:has([data-testid="stToolbarActions"] :is(button, a)) {
+  background: #FFFFFF; border: 1px solid var(--ur-borda); border-radius: 10px;
+  padding: 2px 6px; box-shadow: 0 4px 14px rgba(15, 23, 42, .12);
+}
 .ur-topo-texto { display: flex; flex-direction: column; line-height: 1.3; color: #1F2937; }
 .ur-topo-texto small { font-size: 12.5px; color: var(--ur-texto-suave); }
 .ur-topo-texto strong { font-size: 15px; font-weight: 700; }
