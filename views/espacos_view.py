@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import streamlit as st
 
+from controllers.equipamento_controller import EquipamentoController
 from controllers.espaco_controller import EspacoController
 from domain.enums import PODEM_RESERVAR
 from models.reserva_model import ReservaModel
@@ -220,6 +221,23 @@ def _campos_espaco(prefixo, equipamentos, atual=None):
     }
 
 
+def _cadastro_rapido_equipamento(prefixo):
+    """Cadastra um equipamento sem sair do diálogo da sala."""
+    with st.expander("Cadastrar novo equipamento", icon=":material/add_circle:"):
+        with st.form(f"{prefixo}_novo_equip", clear_on_submit=True, border=False):
+            with st.container(horizontal=True, vertical_alignment="bottom"):
+                nome = st.text_input("Nome do equipamento", placeholder="Ex.: Projetor")
+                descricao = st.text_input("Descrição", placeholder="Opcional")
+            enviar = st.form_submit_button("Cadastrar equipamento", icon=":material/add:")
+        if enviar:
+            ok, resultado = EquipamentoController().criar_equipamento(nome=nome, descricao=descricao)
+            if ok:
+                st.success(f"{nome.strip()} cadastrado. Já pode selecioná-lo abaixo.",
+                           icon=":material/check_circle:")
+            else:
+                st.error(resultado, icon=":material/error:")
+
+
 @st.dialog("Criar nova sala", width="large")
 def dialogo_nova_sala():
     try:
@@ -227,6 +245,7 @@ def dialogo_nova_sala():
     except Exception:
         st.error("Não foi possível conectar ao banco de dados.")
         return
+    _cadastro_rapido_equipamento("novo")
     equipamentos = carregar_equipamentos()
     with st.form("cadastrar_espaco", clear_on_submit=True, border=False):
         dados = _campos_espaco("novo", equipamentos)
@@ -241,7 +260,9 @@ def dialogo_nova_sala():
 
 @st.dialog("Editar espaço", width="large")
 def _editar_espaco(espaco, controller, equipamentos):
-    dados = _campos_espaco(f"edit_{espaco['id']}", equipamentos, espaco)
+    _cadastro_rapido_equipamento(f"edit_{espaco['id']}")
+    equipamentos = carregar_equipamentos()
+    dados =_campos_espaco(f"edit_{espaco['id']}", equipamentos, espaco)
     with st.container(horizontal=True):
         if st.button("Salvar alterações", icon=":material/save:", type="primary"):
             ok, mensagem = controller.atualizar_espaco(espaco["id"], dados)

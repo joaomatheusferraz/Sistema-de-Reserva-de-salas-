@@ -340,7 +340,7 @@ def _equipamentos():
     if not equipamentos:
         estado_vazio("Nenhum equipamento cadastrado. Ex.: Projetor, Wi-Fi, Computadores.", ":material/devices:")
         return
-    st.caption("Associe equipamentos às salas em Salas e espaços › Editar.")
+    st.caption("Associe equipamentos às salas em Reservar sala › Editar (no card da sala).")
     for e in sorted(equipamentos, key=lambda e: e.get("nome", "").lower()):
         eid = e["id"]
         with st.container(border=True, horizontal=True, vertical_alignment="bottom"):
