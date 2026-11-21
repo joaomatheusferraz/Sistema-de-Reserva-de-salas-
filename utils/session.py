@@ -26,5 +26,6 @@ def exigir_autenticacao():
 
 
 def encerrar_sessao():
-    st.session_state.pop(SESSION_USER_KEY, None)
-    st.session_state.pop(SESSION_TOKEN_KEY, None)
+    """Limpa todas as chaves da sessão para evitar vazamento de estado entre logins."""
+    for chave in list(st.session_state.keys()):
+        st.session_state.pop(chave, None)
