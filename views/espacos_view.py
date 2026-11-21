@@ -108,9 +108,12 @@ def espacos_view(usuario):
 
     def corresponde(espaco):
         localizacao = espaco.get("localizacao") or {}
+        bloco = localizacao.get("bloco")
+        andar = localizacao.get("andar")
         texto = " ".join([
             str(espaco.get("nome", "")),
-            str(localizacao.get("bloco", "")),
+            f"Bloco {bloco}" if bloco else "",
+            f"Andar {andar}" if andar is not None and andar != "" else "",
             str(localizacao.get("identificacao", "")),
             tipo_espaco(espaco.get("tipo"))[0],
             *(espaco.get("caracteristicas") or []),
