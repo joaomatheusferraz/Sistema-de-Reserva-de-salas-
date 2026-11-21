@@ -143,8 +143,11 @@ def _linha(reserva, nomes, usuario, perfil, reservaveis, momento):
                         disabled=not editavel,
                         help="Editar" if editavel else "Reservas aprovadas só podem ser alteradas pela coordenação",
                     ):
-                        ocupacao, _ = carregar_ocupacao()
-                        dialogo_editar(reserva, usuario, perfil, reservaveis, nomes, ocupacao)
+                        ocupacao, erro = carregar_ocupacao()
+                        if erro:
+                            st.warning(erro, icon=":material/warning:")
+                        else:
+                            dialogo_editar(reserva, usuario, perfil, reservaveis, nomes, ocupacao)
                     if st.button("", icon=":material/cancel:", key=f"tab_cancelar_{rid}", help="Cancelar"):
                         dialogo_cancelar(reserva, usuario, perfil)
                 elif st.button("", icon=":material/visibility:", key=f"tab_ver_{rid}", help="Ver detalhes"):
