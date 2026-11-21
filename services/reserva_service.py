@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 
 from domain.enums import Perfil
 from models.espaco_model import EspacoModel
@@ -13,6 +13,8 @@ class ReservaService:
 
     STATUS_PENDENTE = "pendente"
     STATUS_RESERVADA = "reservada"
+    HORA_ABERTURA = time(7, 0)
+    HORA_FECHAMENTO = time(23, 0)
     PERFIS_QUE_RESERVAM = {
         Perfil.PROFESSOR.value,
         Perfil.EXTERNO.value,
@@ -270,6 +272,8 @@ class ReservaService:
             raise ValueError("Início e fim devem ser valores datetime.")
         if fim <= inicio:
             raise ValueError("O fim deve ser posterior ao início.")
+        if inicio.time() < self.HORA_ABERTURA or fim.time() > self.HORA_FECHAMENTO:
+            raise ValueError("O horário da reserva deve respeitar o funcionamento entre 07:00 e 23:00.")
         if not texto_obrigatorio(finalidade):
             raise ValueError("Informe a finalidade da reserva.")
         perfil = str(perfil).strip().lower() if perfil is not None else ""
