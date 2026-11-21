@@ -22,6 +22,8 @@ O MVP será considerado pronto para homologação quando todos os critérios aba
 - [ ] **CA10** (`RF30`, `RN22`) — Reservas aprovadas passam a aparecer como confirmadas (`Reservada`).
 - [ ] **CA11** (`RF36`, `RN17`, `RN18`, `RN31`) — Espaços bloqueados não recebem novas reservas nem aprovações conflitantes durante o bloqueio.
 - [ ] **CA12** (`RN27`) — A finalidade da reserva é obrigatória e fica registrada na solicitação.
+- [ ] **CA19** (`RN07`) — Reservas respeitam o horário de funcionamento (07h–23h), terminam no mesmo dia e não são criadas no passado.
+- [ ] **CA20** (`RN13`, `RF46`) — As regras específicas do espaço são exibidas antes da confirmação da reserva.
 - [ ] **CA13** (`RF04–RF09`, `RF48`, `RF50`) — Salas e laboratórios podem ser pesquisados e filtrados (nome, bloco, tipo, capacidade e disponibilidade).
 - [ ] **CA14** (`RF49`) — Equipamentos podem ser utilizados como filtro de pesquisa.
 - [ ] **CA15** (`RF52`, `RN29`) — Coordenadores conseguem cadastrar, editar e associar equipamentos aos espaços.
@@ -50,10 +52,10 @@ O MVP será considerado pronto para homologação quando todos os critérios aba
 - **Quando** altera o e-mail ou telefone (com DDD válido) e salva
 - **Então** o sistema atualiza o Firestore e sincroniza o novo e-mail no Firebase Auth, mantendo a sessão ativa com os dados atualizados.
 
-#### Cenário 1.4: Prevenção de escalada de privilégio no auto-cadastro (`RN01` — pendência de segurança)
+#### Cenário 1.4: Prevenção de escalada de privilégio no auto-cadastro (`RN01` — implementado)
 - **Dado** um novo usuário sem aprovação prévia da coordenação criando conta pela tela pública
 - **Quando** finaliza o cadastro
-- **Então** a conta não deve receber permissões administrativas ou privilégio de `professor` sem validação/aprovação institucional.
+- **Então** a conta não recebe permissões administrativas nem privilégio de `professor` sem validação/aprovação institucional: o cadastro público só aceita `aluno` e `externo` (verificado em `tests/test_services.py`).
 
 ---
 
@@ -103,6 +105,16 @@ O MVP será considerado pronto para homologação quando todos os critérios aba
 - **Quando** clica em cancelar e confirma no diálogo "Cancelar reserva?"
 - **Então** o status muda para `cancelada`, registra histórico e notificação, e o horário volta a aceitar novas solicitações.
 
+#### Cenário 3.6: Reserva fora do horário de funcionamento ou no passado (`RN07`, `RF19`)
+- **Dado** um `professor` autenticado e a "Sala 204" livre
+- **Quando** solicita uma reserva em horário já transcorrido, antes das `07:00`, depois das `23:00` ou começando em um dia e terminando em outro
+- **Então** o serviço recusa a solicitação com mensagem clara, sem depender da validação da interface (verificado em `tests/test_reserva_horarios.py`).
+
+#### Cenário 3.7: Regras do laboratório visíveis antes de confirmar (`RN13`, `RF46`)
+- **Dado** o "Laboratório 02" com a regra específica "Usar jaleco" cadastrada
+- **Quando** um professor abre o diálogo "Reservar sala" desse laboratório
+- **Então** as regras de uso são exibidas antes do botão "Enviar solicitação".
+
 ---
 
 ### Fluxo 4 — Área do Coordenador, Aprovação, Bloqueios e Equipamentos (`RF32–RF39`, `RF52`, `RN05`, `RN17`, `RN18`, `RN20`, `RN26`, `RN29`, `RN31`)
@@ -130,7 +142,7 @@ O MVP será considerado pronto para homologação quando todos os critérios aba
 #### Cenário 4.5: Controle administrativo de equipamentos e espaços (`RF34`, `RF35`, `RF52`, `RN05`, `RN29`)
 - **Dado** um usuário que **não** possui perfil `coordenador`
 - **Quando** tenta cadastrar, editar ou desativar espaços ou equipamentos
-- **Então** o acesso é negado tanto na interface quanto na camada de serviços. *(Nota: reforço de RBAC nos serviços de espaço/equipamento registrado como pendência para Devs).*
+- **Então** o acesso é negado tanto na interface quanto na camada de serviços. *(Nota: os serviços de espaço/equipamento rejeitam outros perfis quando o perfil é informado, mas as views ainda não o repassam; tornar a checagem obrigatória segue como pendência para Devs — ver `RN05`/`RN29` na matriz.)*
 
 ---
 
