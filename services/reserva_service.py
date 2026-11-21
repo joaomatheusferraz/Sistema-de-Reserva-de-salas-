@@ -47,6 +47,7 @@ class ReservaService:
             finalidade,
             perfil,
         )
+        self._exigir_horario_futuro(inicio)
 
         usuario = self.usuario_model.buscar(responsavel_id)
         espaco = self.espaco_model.buscar(espaco_id)
@@ -94,6 +95,16 @@ class ReservaService:
             reserva_id,
         )
         return reserva_id
+
+    @staticmethod
+    def _agora(referencia):
+        """Relógio atual no mesmo tipo (com ou sem fuso) do horário comparado."""
+        return datetime.now(referencia.tzinfo) if referencia.tzinfo else datetime.now()
+
+    def _exigir_horario_futuro(self, inicio):
+        """RN07: reservas não podem ser criadas para horários já transcorridos."""
+        if inicio < self._agora(inicio):
+            raise ValueError("Não é possível reservar um horário que já passou.")
 
     @staticmethod
     def _exigir_autorizacao_externo(usuario, espaco_id, perfil):
@@ -274,6 +285,10 @@ class ReservaService:
             raise ValueError("Início e fim devem ser valores datetime.")
         if fim <= inicio:
             raise ValueError("O fim deve ser posterior ao início.")
+        # RN07: sem isto, 22:00 -> 06:00 do dia seguinte passaria na checagem de
+        # horário abaixo, pois ela compara apenas a hora do dia.
+        if inicio.date() != fim.date():
+            raise ValueError("A reserva deve começar e terminar no mesmo dia.")
         if inicio.time() < self.HORA_ABERTURA or fim.time() > self.HORA_FECHAMENTO:
             raise ValueError("O horário da reserva deve respeitar o funcionamento entre 07:00 e 23:00.")
         if not texto_obrigatorio(finalidade):

@@ -16,8 +16,9 @@
 | Many | Desenvolvedor |
 | Jadson | Desenvolvedor |
 | Amadio | UX e Prototipação |
+| Ruy | Product Owner (PO) |
 
-> **Nota de governança (Kanban):** Os papéis de *Product Owner* (priorização de produto junto à coordenação/reitoria) e *Scrum Master* (remoção de impedimentos e organização do fluxo Kanban) são conduzidos de forma colaborativa pelo time, mantendo a separação de entregas por especialidade.
+> **Nota de governança (Kanban):** O *Product Owner* é responsável por priorizar o backlog junto à coordenação/reitoria, validar os critérios de aceitação e decidir o escopo MVP × Pós-MVP. O papel de *Scrum Master* (remoção de impedimentos e organização do fluxo Kanban) é conduzido de forma colaborativa pelo time, mantendo a separação de entregas por especialidade.
 
 ---
 
