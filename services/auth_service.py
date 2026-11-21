@@ -17,8 +17,12 @@ class AuthService:
             raise ValueError("Token de autenticação não informado.")
 
         try:
-            token = auth.verify_id_token(id_token)
+            # Tolerância de relógio: se o relógio da máquina estiver alguns
+            # segundos atrasado, o token recém-emitido parece "do futuro" e
+            # o Firebase o recusaria ("Token used too early").
+            token = auth.verify_id_token(id_token, clock_skew_seconds=30)
         except Exception as erro:
+            print(f"[auth] Falha ao verificar o token: {type(erro).__name__}: {erro}")
             raise PermissionError("Token de autenticação inválido.") from erro
 
         usuario = self.usuario_model.buscar_por_uid(token["uid"])

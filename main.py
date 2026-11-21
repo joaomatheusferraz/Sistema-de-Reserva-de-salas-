@@ -49,10 +49,15 @@ def pagina_perfil():
 
 def app():
     if not autenticado():
-        st.navigation(
-            [st.Page(login_view, title="Entrar", icon=":material/login:")],
-            position="hidden",
-        ).run()
+        # Quem abre um link interno (ex.: /salas) sem estar logado — ou perde
+        # a sessão quando o Cloud reinicia — cai no login, e não no aviso
+        # "Page not found". Depois do login a página pedida abre normalmente.
+        paginas_login = [st.Page(login_view, title="Entrar", icon=":material/login:", default=True)]
+        paginas_login += [
+            st.Page(login_view, title="Entrar", url_path=caminho)
+            for caminho in ("inicio", "salas", "minhas-reservas", "coordenador", "agenda", "perfil")
+        ]
+        st.navigation(paginas_login, position="hidden").run()
         return
 
     usuario = usuario_atual()
