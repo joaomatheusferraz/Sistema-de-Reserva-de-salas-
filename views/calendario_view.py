@@ -26,16 +26,17 @@ def calendario_view(usuario):
         "Descubra onde é cada aula: pesquise pelo professor, pela sala ou pela atividade.",
         ":material/calendar_month:",
     )
-    ocupacao, erro_reservas = carregar_ocupacao()
-    if erro_reservas:
-        st.error(erro_reservas, icon=":material/error:")
-        return
-    # Inclui salas desativadas para que reservas antigas continuem com nome.
-    espacos, erro = carregar_espacos(apenas_ativos=False)
-    if erro:
-        st.warning("Não foi possível carregar os nomes das salas.", icon=":material/warning:")
-    nomes = rotulos_unicos(espacos)
-    pessoas = {u["id"]: u.get("nome") or "—" for u in UsuarioController().listar_usuarios()}
+    with st.spinner("Carregando agenda e ocupação dos espaços..."):
+        ocupacao, erro_reservas = carregar_ocupacao()
+        if erro_reservas:
+            st.error(erro_reservas, icon=":material/error:")
+            return
+        # Inclui salas desativadas para que reservas antigas continuem com nome.
+        espacos, erro = carregar_espacos(apenas_ativos=False)
+        if erro:
+            st.warning("Não foi possível carregar os nomes das salas.", icon=":material/warning:")
+        nomes = rotulos_unicos(espacos)
+        pessoas = {u["id"]: u.get("nome") or "—" for u in UsuarioController().listar_usuarios()}
 
     preselecao = st.session_state.pop("agenda_espaco_id", None)
     if preselecao in nomes:

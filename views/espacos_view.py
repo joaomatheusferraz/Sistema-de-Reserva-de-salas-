@@ -29,13 +29,14 @@ def espacos_view(usuario):
     if mensagem:
         st.success(mensagem, icon=":material/check_circle:")
 
-    try:
-        controller = EspacoController()
-        espacos = controller.listar_espacos()
-    except Exception:
-        st.error("Não foi possível carregar os espaços.", icon=":material/error:")
-        return
-    equipamentos = carregar_equipamentos()
+    with st.spinner("Carregando espaços disponíveis..."):
+        try:
+            controller = EspacoController()
+            espacos = controller.listar_espacos()
+        except Exception:
+            st.error("Não foi possível carregar os espaços.", icon=":material/error:")
+            return
+        equipamentos = carregar_equipamentos()
 
     # ---- Busca + botão de filtros avançados ----
     with st.container(horizontal=True, vertical_alignment="center"):
@@ -100,7 +101,8 @@ def espacos_view(usuario):
         )
         return
 
-    reservas, erro = carregar_ocupacao()
+    with st.spinner("Consultando ocupação das salas..."):
+        reservas, erro = carregar_ocupacao()
     if erro:
         st.warning(erro)
 

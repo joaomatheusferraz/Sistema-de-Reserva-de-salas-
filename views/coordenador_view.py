@@ -53,14 +53,15 @@ def coordenador_view(usuario):
 
     reservas_ctrl = ReservaController()
     usuarios_ctrl = UsuarioController()
-    espacos, _ = carregar_espacos(apenas_ativos=False)
-    usuarios = usuarios_ctrl.listar_usuarios()
-    pendentes = reservas_ctrl.listar_pendentes(perfil)
-    if isinstance(pendentes, tuple):
-        st.error(pendentes[1])
-        pendentes = []
-    todas = reservas_ctrl.listar_todas(perfil)
-    todas = [] if isinstance(todas, tuple) else todas
+    with st.spinner("Carregando dados da coordenação..."):
+        espacos, _ = carregar_espacos(apenas_ativos=False)
+        usuarios = usuarios_ctrl.listar_usuarios()
+        pendentes = reservas_ctrl.listar_pendentes(perfil)
+        if isinstance(pendentes, tuple):
+            st.error(pendentes[1])
+            pendentes = []
+        todas = reservas_ctrl.listar_todas(perfil)
+        todas = [] if isinstance(todas, tuple) else todas
     momento = agora()
     ativas = [
         r for r in todas
