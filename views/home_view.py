@@ -91,14 +91,17 @@ def _notificacoes(usuario):
     """RF51: notificações de reserva na tela inicial."""
     controller = NotificacaoController()
     nao_lidas = controller.listar_do_usuario(usuario["id"], apenas_nao_lidas=True)
+    if erro := st.session_state.pop("erro_notificacoes", None):
+        st.warning(erro)
     if not nao_lidas:
         return
     with st.container(key="card_notificacoes"):
         with st.container(horizontal=True, vertical_alignment="center"):
             st.markdown(f"**:material/notifications_active: Notificações** :red-badge[{len(nao_lidas)} nova(s)]")
             if st.button("Marcar todas como lidas", icon=":material/done_all:", key="notif_todas", type="tertiary"):
-                for n in nao_lidas:
-                    controller.marcar_como_lida(n["id"])
+                resultados = [controller.marcar_como_lida(n["id"]) for n in nao_lidas]
+                if not all(resultados):
+                    st.session_state["erro_notificacoes"] = "Não foi possível marcar todas as notificações como lidas."
                 st.rerun()
         for n in nao_lidas[:5]:
             icone, cor = ICONES_NOTIFICACAO.get(n.get("tipo"), (":material/info:", "gray"))
@@ -106,5 +109,6 @@ def _notificacoes(usuario):
                 quando = formatar_data(n["created_at"]) if n.get("created_at") else ""
                 st.markdown(f":{cor}[{icone}] {n.get('mensagem')}  \n:gray[{quando}]")
                 if st.button("", icon=":material/close:", key=f"notif_{n['id']}", help="Marcar como lida", type="tertiary"):
-                    controller.marcar_como_lida(n["id"])
-                    st.rerun()
+                    if controller.marcar_como_lida(n["id"]):
+                        st.rerun()
+                    st.warning("Não foi possível marcar a notificação como lida.")
