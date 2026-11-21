@@ -247,10 +247,23 @@ def _editar_espaco(espaco, controller, equipamentos):
                 st.session_state["espaco_mensagem"] = mensagem
                 st.rerun()
             st.error(mensagem)
-        if st.button("Desativar espaço", icon=":material/visibility_off:"):
-            ok, mensagem = controller.excluir_espaco(espaco["id"])
-            if ok:
-                st.session_state["espaco_mensagem"] = mensagem
+        if st.session_state.get(f"confirmar_desativar_{espaco['id']}"):
+            st.warning(f"Tem certeza que deseja desativar '{espaco.get('nome')}'?")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Sim, desativar", icon=":material/delete:", type="primary", key=f"btn_sim_desativar_{espaco['id']}"):
+                    ok, mensagem = controller.excluir_espaco(espaco["id"])
+                    st.session_state.pop(f"confirmar_desativar_{espaco['id']}", None)
+                    if ok:
+                        st.session_state["espaco_mensagem"] = mensagem
+                        st.rerun()
+                    st.error(mensagem)
+            with c2:
+                if st.button("Cancelar", icon=":material/close:", key=f"btn_canc_desativar_{espaco['id']}"):
+                    st.session_state.pop(f"confirmar_desativar_{espaco['id']}", None)
+                    st.rerun()
+        else:
+            if st.button("Desativar espaço", icon=":material/visibility_off:"):
+                st.session_state[f"confirmar_desativar_{espaco['id']}"] = True
                 st.rerun()
-            st.error(mensagem)
     st.caption("Um espaço desativado some das buscas e não recebe novas reservas; o histórico é mantido.")

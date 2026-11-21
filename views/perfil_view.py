@@ -53,8 +53,20 @@ def perfil_view(usuario):
             if st.button("Alterar senha", icon=":material/key:",
                          key="perfil_acao_senha", width="stretch"):
                 _alterar_senha(usuario)
-            st.button("Sair", icon=":material/logout:", type="primary",
-                      key="perfil_sair", width="stretch", on_click=AuthController.logout)
+            if st.button("Sair", icon=":material/logout:", type="primary",
+                         key="perfil_sair", width="stretch"):
+                _dialogo_sair()
+
+
+@st.dialog("Encerrar sessão?")
+def _dialogo_sair():
+    st.write("Tem certeza de que deseja sair do UniReserve?")
+    with st.container(horizontal=True):
+        if st.button("Sim, sair", icon=":material/logout:", type="primary"):
+            AuthController.logout()
+            st.rerun()
+        if st.button("Cancelar", icon=":material/close:"):
+            st.rerun()
 
 
 @st.dialog("Editar e-mail/telefone")

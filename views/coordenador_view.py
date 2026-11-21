@@ -343,8 +343,18 @@ def _equipamentos():
                 _concluir(*controller.atualizar_equipamento(
                     eid, {"nome": novo_nome.strip(), "descricao": nova_desc.strip(), "exige_autorizacao": exige}
                 ))
-            if st.button("Remover", icon=":material/delete:", key=f"eq_remover_{eid}"):
-                _concluir(*controller.excluir_equipamento(eid))
+            if st.session_state.get(f"confirmar_remover_eq_{eid}"):
+                st.warning(f"Confirmar remoção de '{e.get('nome')}'?")
+                if st.button("Sim, remover", icon=":material/delete:", type="primary", key=f"eq_sim_remover_{eid}"):
+                    st.session_state.pop(f"confirmar_remover_eq_{eid}", None)
+                    _concluir(*controller.excluir_equipamento(eid))
+                if st.button("Cancelar", icon=":material/close:", key=f"eq_canc_remover_{eid}"):
+                    st.session_state.pop(f"confirmar_remover_eq_{eid}", None)
+                    st.rerun()
+            else:
+                if st.button("Remover", icon=":material/delete:", key=f"eq_remover_{eid}"):
+                    st.session_state[f"confirmar_remover_eq_{eid}"] = True
+                    st.rerun()
 
 
 # ---------------------------------------------------------------------------
