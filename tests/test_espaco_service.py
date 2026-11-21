@@ -110,6 +110,16 @@ class TestEspacoServiceEController(unittest.TestCase):
         sucesso_del, msg_del = self.controller.excluir_espaco("espaco_1")
         self.assertTrue(sucesso_del)
 
+    def test_rbac_coordenador_espaco(self):
+        with self.assertRaises(PermissionError):
+            self.service.criar("Sala X", TipoEspaco.SALA.value, 20, perfil="aluno")
+
+        with self.assertRaises(PermissionError):
+            self.service.atualizar("espaco_1", {"nome": "Novo", "tipo": TipoEspaco.SALA.value, "capacidade": 20}, perfil="professor")
+
+        with self.assertRaises(PermissionError):
+            self.service.excluir("espaco_1", perfil="externo")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -75,6 +75,16 @@ class TestEquipamentoServiceEController(unittest.TestCase):
         sucesso_del, _ = self.controller.excluir_equipamento("equip_1")
         self.assertTrue(sucesso_del)
 
+    def test_rbac_coordenador_equipamento(self):
+        with self.assertRaises(PermissionError):
+            self.service.criar("Projetor", perfil="professor")
+
+        with self.assertRaises(PermissionError):
+            self.service.atualizar("equip_1", {"nome": "Novo"}, perfil="aluno")
+
+        with self.assertRaises(PermissionError):
+            self.service.excluir("equip_1", perfil="externo")
+
 
 if __name__ == "__main__":
     unittest.main()

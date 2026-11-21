@@ -49,6 +49,11 @@ class FakeUsuarioModel:
         if usuario_id in self.usuarios:
             self.usuarios[usuario_id]["espacos_autorizados_ids"] = list(espacos_ids)
 
+    def atualizar_contato(self, usuario_id, email, telefone, email_anterior=None):
+        if usuario_id in self.usuarios:
+            self.usuarios[usuario_id]["email"] = email
+            self.usuarios[usuario_id]["telefone"] = telefone
+
     def excluir(self, usuario_id):
         if usuario_id in self.usuarios:
             del self.usuarios[usuario_id]
@@ -160,6 +165,27 @@ class TestUsuarioServiceEController(unittest.TestCase):
 
         sucesso_del, _ = self.controller.excluir_usuario("user_1")
         self.assertTrue(sucesso_del)
+
+    def test_atualizar_contato_service_e_controller(self):
+        uid = self.service.cadastrar("Contato Teste", "contato@teste.com")
+        self.service.atualizar_contato(uid, "novo@teste.com", "(11) 98765-4321")
+        salvo = self.service.buscar_por_id(uid)
+        self.assertEqual(salvo["email"], "novo@teste.com")
+        self.assertEqual(salvo["telefone"], "(11) 98765-4321")
+
+        with self.assertRaises(ValueError):
+            self.service.atualizar_contato(uid, "email_invalido", "11987654321")
+
+        with self.assertRaises(ValueError):
+            self.service.atualizar_contato(uid, "valido@teste.com", "123")  # telefone sem DDD
+
+        usuario_dict = {"id": uid, "email": "novo@teste.com"}
+        ok, msg = self.controller.atualizar_contato(usuario_dict, "outro@teste.com", "(11) 99999-8888")
+        self.assertTrue(ok)
+        self.assertIn("atualizados", msg.lower())
+
+        ok_err, _ = self.controller.atualizar_contato(usuario_dict, "invalido", "11999998888")
+        self.assertFalse(ok_err)
 
 
 if __name__ == "__main__":
