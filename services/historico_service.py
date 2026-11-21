@@ -1,4 +1,5 @@
 from models.historico_model import HistoricoModel
+from utils.validators import texto_obrigatorio
 
 
 class HistoricoService:
@@ -15,6 +16,13 @@ class HistoricoService:
         dados_anteriores=None,
         dados_novos=None,
     ):
+        if not texto_obrigatorio(entidade):
+            raise ValueError("Informe a entidade.")
+        if not texto_obrigatorio(entidade_id):
+            raise ValueError("Informe o ID da entidade.")
+        if not texto_obrigatorio(acao):
+            raise ValueError("Informe a ação executada.")
+
         return self.model.criar({
             "entidade": entidade,
             "entidade_id": entidade_id,
@@ -25,4 +33,6 @@ class HistoricoService:
         })
 
     def listar_por_entidade(self, entidade, entidade_id):
+        if not texto_obrigatorio(entidade) or not texto_obrigatorio(entidade_id):
+            return []
         return self.model.listar_por_entidade(entidade, entidade_id)
