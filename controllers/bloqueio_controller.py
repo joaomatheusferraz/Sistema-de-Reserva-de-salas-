@@ -1,5 +1,6 @@
 """Controlador de bloqueios temporários de espaços pela coordenação."""
 
+from models.reserva_model import ReservaModel
 from services.bloqueio_service import BloqueioService
 
 
@@ -7,7 +8,8 @@ class BloqueioController:
     """Gerencia criação, consulta e cancelamento de bloqueios de salas."""
 
     def __init__(self, service=None):
-        self.service = service or BloqueioService()
+        # RN18: sem o modelo de reservas, o aviso de conflitos nunca seria calculado.
+        self.service = service or BloqueioService(reserva_model=ReservaModel())
 
     def criar_bloqueio(self, **dados):
         """Cria um bloqueio temporário em um espaço físico."""
