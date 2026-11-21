@@ -227,6 +227,42 @@ section[data-testid="stSidebar"] { min-width: 290px !important; max-width: 290px
 [class*="st-key-perfil_acao"] button:hover { background: #F0F5FC; }
 .st-key-perfil_sair button { background: #E5383B; border-color: #E5383B; min-height: 42px; }
 .st-key-perfil_sair button:hover { background: #C92A2D; border-color: #C92A2D; }
+
+/* ---------- Responsividade e Acessibilidade (H8 / WCAG) ---------- */
+@media (max-width: 768px) {
+  [data-testid="stMainBlockContainer"] {
+    padding: 0 1rem 2rem !important;
+  }
+  [data-testid="stLayoutWrapper"]:has(> .st-key-topo) {
+    margin: 0 -1rem 1rem -1rem;
+    width: calc(100% + 2rem);
+  }
+  .st-key-topo {
+    padding: .5rem 1rem;
+  }
+  .st-key-banner {
+    padding: 1.5rem 1.25rem 1rem;
+    min-height: auto;
+  }
+  .st-key-banner h2 {
+    font-size: 24px;
+  }
+  .st-key-banner p {
+    font-size: 14px;
+  }
+  [class*="st-key-aprovar_"] button, [class*="st-key-rejeitar_"] button,
+  [class*="st-key-tab_"] button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 1024px) {
+  section[data-testid="stSidebar"] {
+    min-width: 240px !important;
+    max-width: 240px !important;
+  }
+}
 </style>
 """
 
