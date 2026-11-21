@@ -46,6 +46,22 @@ def painel_do_dia(espaco, ocupacao, dia, ignorar_id=None):
             st.badge("Dia livre", icon=":material/check_circle:", color="green")
 
 
+def regras_do_espaco(espaco):
+    """Regras específicas de utilização do espaço, sem itens vazios (RN13)."""
+    return [str(r).strip() for r in (espaco.get("regras_especificas") or []) if r and str(r).strip()]
+
+
+def painel_regras(espaco):
+    """Exibe as regras do espaço antes da confirmação da reserva (RN13, RF46)."""
+    regras = regras_do_espaco(espaco)
+    if not regras:
+        return
+    with st.container(border=True):
+        st.markdown(":material/rule: **Regras de uso deste espaço**")
+        for regra in regras:
+            st.markdown(f"- {regra}")
+
+
 @st.dialog("Reservar sala", width="medium")
 def dialogo_reservar(espaco, usuario, perfil, ocupacao):
     dia = st.date_input(
@@ -55,6 +71,7 @@ def dialogo_reservar(espaco, usuario, perfil, ocupacao):
         key=f"dlg_reserva_dia_{espaco['id']}",
     )
     painel_do_dia(espaco, ocupacao, dia)
+    painel_regras(espaco)
     with st.form(f"dlg_reserva_{espaco['id']}", border=False):
         with st.container(horizontal=True):
             inicio = st.time_input("Início", value=time(8, 0), step=timedelta(minutes=30))
