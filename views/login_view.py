@@ -87,7 +87,7 @@ def _formulario_cadastro():
             novo_ra = st.text_input("RA", key="cadastro_ra", icon=":material/badge:")
             perfil = st.selectbox(
                 "Perfil",
-                ["aluno", "professor", "externo"],
+                ["aluno", "externo"],
                 format_func=lambda valor: PERFIS[valor][0],
                 key="cadastro_perfil",
             )
