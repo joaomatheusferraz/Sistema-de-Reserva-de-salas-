@@ -37,15 +37,40 @@ Toda a especificação funcional, regras de negócio, rastreabilidade com o cód
 
 ## Executar localmente
 
-1. Clone o repositório e crie um ambiente virtual Python.
+1. Clone o repositório e crie um ambiente virtual Python:
+
+   ```bash
+   python -m venv .venv
+   .\.venv\Scripts\activate   # No Linux/Mac: source .venv/bin/activate
+   ```
+
 2. Instale as dependências:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Configure uma conta de serviço de um projeto Firebase com Firestore. O código lê o JSON pela variável de ambiente `FIREBASE_SERVICE_ACCOUNT_JSON`, pelos Secrets do Streamlit ou por `secrets/key.json` no ambiente local. Esses arquivos de credenciais são ignorados pelo Git; **não publique a chave**.
-4. Inicie a aplicação:
+3. **Configuração do Firebase:**
+   O sistema utiliza autenticação e Firestore. É possível configurar via:
+   - **Arquivo local:** salve a chave de serviço em `secrets/key.json`.
+   - **Streamlit Secrets:** copie `.streamlit/secrets.toml.example` para `.streamlit/secrets.toml` e preencha as credenciais.
+   - **Variáveis de ambiente:**
+     - `FIREBASE_WEB_API_KEY`: Chave de API Web do Firebase (para login e registro via REST).
+     - `FIREBASE_SERVICE_ACCOUNT_JSON`: Conteúdo JSON da conta de serviço.
+
+   > [!IMPORTANT]
+   > Esses arquivos de credenciais são ignorados pelo Git; **nunca publique suas chaves**.
+
+4. **Primeiro acesso de Coordenador:**
+   Por segurança, o auto-cadastro na tela inicial permite apenas os perfis `Aluno` e `Usuário externo`. Para promover uma conta a `Coordenador`, altere o campo `perfil` do documento correspondente na coleção `usuarios` do Cloud Firestore para `"coordenador"`. A partir daí, o coordenador pode alterar perfis diretamente na interface.
+
+5. **Executar testes automatizados:**
+
+   ```bash
+   python -m pytest
+   ```
+
+6. Inicie a aplicação:
 
    ```bash
    streamlit run main.py
