@@ -320,6 +320,42 @@ class ServiceTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             service.listar_todas("professor")
 
+    def test_registration_profile_restriction_rn01(self):
+        auth_service = AuthService(FakeUserModel(), FakeHttp())
+        with self.assertRaises(ValueError) as ctx:
+            auth_service.registrar_usuario("Prof", "prof@teste.com", "RA123", "senha123", perfil="professor")
+        self.assertIn("coordenação", str(ctx.exception).lower())
+
+    def test_operating_hours_validation_rn07(self):
+        service = self.make_reservation_service()
+        # Horário antes das 07:00
+        madrugada_ini = datetime(2026, 1, 1, 6, 0)
+        madrugada_fim = datetime(2026, 1, 1, 7, 0)
+        with self.assertRaises(ValueError) as ctx:
+            service.criar("e1", "u1", madrugada_ini, madrugada_fim, "aula", "professor")
+        self.assertIn("07:00 e 23:00", str(ctx.exception))
+
+    def test_block_conflict_detection_rn18(self):
+        class ActiveReservationModel(FakeReservationModel):
+            def listar_ativas(self):
+                return [{
+                    "id": "r_ativa",
+                    "espaco_id": "e1",
+                    "inicio": datetime(2026, 1, 1, 10, 0),
+                    "fim": datetime(2026, 1, 1, 12, 0),
+                    "status": "reservada",
+                }]
+
+        res_model = ActiveReservationModel()
+        service = BloqueioService(FakeBlockModel(), FakeSpaceModel(), self.history, reserva_model=res_model)
+        conflitos = service.verificar_reservas_conflitantes(
+            "e1",
+            datetime(2026, 1, 1, 11, 0),
+            datetime(2026, 1, 1, 13, 0),
+        )
+        self.assertEqual(len(conflitos), 1)
+        self.assertEqual(conflitos[0]["id"], "r_ativa")
+
 
 if __name__ == "__main__":
     unittest.main()

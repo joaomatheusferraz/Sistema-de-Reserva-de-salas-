@@ -130,8 +130,10 @@
 5. **[Baixa — Alinhamento RF46/RN13/RF40]** Exibir `regras_especificas` no diálogo de reserva e definir se `curso` (em `perfil_view.py`) será editável ou removido.
 
 ### Para Qualidade e Testes (Caio / `Solu-o`)
-1. **[Urgente — PR `#1`]** Antes de fazer merge da branch `qa/melhorias-backend-e-testes` na `main`, atualizar com `main` e **migrar o método `atualizar_contato`** (criado recentemente na `main` para `views/perfil_view.py`) para `UsuarioService` e `UsuarioController`, evitando quebra na edição de perfil.
-2. **[Média]** Cobrir em testes automatizados os cenários negativos documentados em [docs/criterios_aceitacao.md](criterios_aceitacao.md) (especialmente bloqueio × aprovação e remoção de arquivos legados `login.py` e `views/usuario_view.py`).
+1. **[Concluído — PR `#1` e branch QA]** Método `atualizar_contato` integrado em `UsuarioService` e `UsuarioController`, garantindo compatibilidade com `views/perfil_view.py`.
+2. **[Concluído — Limpeza e Segurança]** Arquivos legados `login.py` e `views/usuario_view.py` removidos definitivamente do repositório.
+3. **[Concluído — Backend & Regras]** Validação de horário de funcionamento (`RN07`), restrição de auto-cadastro para professor (`RN01`), detecção de conflitos ao criar bloqueios (`RN18`) e checagem de perfil coordenador (`RN05`/`RN29`).
+4. **[Concluído — Cobertura Automatizada]** Suíte de testes unitários expandida com 100% de aprovação no pytest.
 
 ### Para UX e Prototipação (Amadio)
 1. **[Baixa]** Alinhar a exibição de `regras_especificas` de laboratórios no modal de reserva (`RF46`/`RN13`) e decidir o formato de avisos institucionais no banner inicial (`RF51`).

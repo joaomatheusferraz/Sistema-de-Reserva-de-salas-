@@ -56,20 +56,21 @@ class UsuarioController:
             return False, f"Erro ao atualizar usuário: {erro}"
 
     def atualizar_contato(self, usuario, email, telefone):
-        email = (email or "").strip()
-        telefone = (telefone or "").strip()
-        if not validar_email(email):
-            return False, "Informe um e-mail válido."
-        if telefone and len("".join(c for c in telefone if c.isdigit())) < 10:
-            return False, "Informe o telefone com DDD."
         try:
-            self.model.atualizar_contato(usuario["id"], email, telefone, usuario.get("email"))
+            self.service.atualizar_contato(
+                usuario["id"],
+                email,
+                telefone,
+                usuario.get("email"),
+            )
+            return True, "Dados de contato atualizados."
+        except (ValueError, TypeError) as erro:
+            return False, str(erro)
         except Exception as erro:
             mensagem = str(erro)
             if "EMAIL_EXISTS" in mensagem or "already exists" in mensagem:
                 return False, "Este e-mail já está em uso por outra conta."
             return False, f"Não foi possível atualizar os dados: {erro}"
-        return True, "Dados de contato atualizados."
 
     def atualizar_autorizacoes(self, usuario_id, espacos_ids):
         try:

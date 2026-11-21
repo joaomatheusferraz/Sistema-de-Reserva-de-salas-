@@ -65,8 +65,10 @@ class AuthService:
         ra = ra.strip() if isinstance(ra, str) else ""
         if not nome or not email or not ra or not senha:
             raise ValueError("Preencha nome, e-mail, RA e senha.")
-        if perfil not in {"aluno", "professor", "externo"}:
-            raise ValueError("Perfil de cadastro inválido.")
+        if perfil not in {"aluno", "externo"}:
+            raise ValueError(
+                "Perfis de professor e coordenador só podem ser criados pela coordenação."
+            )
         if self.usuario_model.buscar_por_ra(ra):
             raise ValueError("Já existe um usuário cadastrado com esse RA.")
 

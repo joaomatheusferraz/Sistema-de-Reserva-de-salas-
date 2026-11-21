@@ -9,10 +9,11 @@ from utils.validators import texto_obrigatorio
 
 class BloqueioService:
 
-    def __init__(self, model=None, espaco_model=None, historico_service=None):
+    def __init__(self, model=None, espaco_model=None, historico_service=None, reserva_model=None):
         self.model = model or BloqueioModel()
         self.espaco_model = espaco_model or EspacoModel()
         self.historico = historico_service or HistoricoService()
+        self.reserva_model = reserva_model
 
     def criar(
         self,
@@ -35,20 +36,38 @@ class BloqueioService:
         if not espaco or not espaco.get("ativo", True):
             raise ValueError("Espaço não encontrado ou inativo.")
 
+        conflitos = self.verificar_reservas_conflitantes(espaco_id, inicio, fim)
+
         bloqueio_id = self.model.criar({
             "espaco_id": espaco_id,
             "inicio": inicio,
             "fim": fim,
             "motivo": motivo.strip(),
             "responsavel_id": responsavel_id,
+            "reservas_conflitantes_ids": [c.get("id") for c in conflitos if c.get("id")],
         })
         self.historico.registrar(
             "bloqueio",
             bloqueio_id,
             "criacao",
             responsavel_id,
+            dados_novos={"motivo": motivo.strip(), "total_conflitos": len(conflitos)},
         )
         return bloqueio_id
+
+    def verificar_reservas_conflitantes(self, espaco_id, inicio, fim):
+        """Identifica reservas pendentes ou confirmadas que conflitam com o período (RN18)."""
+        if not self.reserva_model:
+            return []
+        from models.reserva_model import ReservaModel
+        ativas = self.reserva_model.listar_ativas()
+        conflitos = []
+        for r in ativas:
+            if r.get("espaco_id") == espaco_id and ReservaModel._sobrepoe(
+                inicio, fim, r.get("inicio"), r.get("fim")
+            ):
+                conflitos.append(r)
+        return conflitos
 
     def listar(self, perfil, apenas_ativos=True):
         self._exigir_coordenador(perfil)
