@@ -98,8 +98,12 @@ def calendario_view(usuario):
         linhas += _horarios_livres(linhas, referencia)
 
     if not linhas:
+        mensagem = (
+            "Nenhum horário encontrado com os filtros selecionados."
+            if salas or busca else "Nenhum horário ocupado nesse período."
+        )
         estado_vazio(
-            "Nenhum horário ocupado nesse período. Todas as salas estão livres.",
+            mensagem,
             ":material/event_available:",
         )
         return
