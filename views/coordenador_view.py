@@ -234,7 +234,7 @@ def _todas_reservas(ctx):
                 status_badge(reserva.get("status"))
             if reserva.get("motivo_rejeicao"):
                 st.caption(f"Motivo da rejeição: {reserva['motivo_rejeicao']}")
-            with st.expander("Histórico", icon=":material/history:"):
+            if st.button("Histórico", icon=":material/history:", key=f"coord_historico_{reserva['id']}"):
                 _historico(ctx, reserva["id"])
             if reserva.get("status") in {"pendente", "reservada"} and para_local(reserva["fim"]) >= agora():
                 if st.button("Cancelar reserva", icon=":material/event_busy:", key=f"coord_cancelar_{reserva['id']}"):
@@ -243,9 +243,17 @@ def _todas_reservas(ctx):
         st.caption("Mostrando as 50 mais recentes. Use a pesquisa para refinar.")
 
 
+@st.dialog("Histórico da reserva")
 def _historico(ctx, reserva_id):
-    eventos = ctx["reservas"].historico_da_reserva(reserva_id, ctx["perfil"])
-    if isinstance(eventos, tuple) or not eventos:
+    try:
+        eventos = ctx["reservas"].historico_da_reserva(reserva_id, ctx["perfil"])
+    except Exception:
+        st.error("Não foi possível carregar o histórico da reserva.")
+        return
+    if isinstance(eventos, tuple):
+        st.error(eventos[1])
+        return
+    if not eventos:
         st.caption("Sem registros.")
         return
     for evento in eventos:
