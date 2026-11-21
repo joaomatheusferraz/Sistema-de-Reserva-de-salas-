@@ -73,6 +73,22 @@ class UsuarioService:
 
         self.model.atualizar(usuario_id, nome, email, ra, perfil_normalizado, ativo)
 
+    def atualizar_contato(self, usuario_id, email, telefone, email_anterior=None):
+        if not texto_obrigatorio(usuario_id):
+            raise ValueError("ID do usuário inválido.")
+
+        email = (email or "").strip()
+        telefone = (telefone or "").strip()
+
+        if not texto_obrigatorio(email):
+            raise ValueError("Informe o e-mail.")
+        if not validar_email(email):
+            raise ValueError("Informe um e-mail válido.")
+        if telefone and len("".join(c for c in telefone if c.isdigit())) < 10:
+            raise ValueError("Informe o telefone com DDD.")
+
+        self.model.atualizar_contato(usuario_id, email, telefone, email_anterior)
+
     def atualizar_autorizacoes(self, usuario_id, espacos_ids):
         if not texto_obrigatorio(usuario_id):
             raise ValueError("ID do usuário inválido.")
