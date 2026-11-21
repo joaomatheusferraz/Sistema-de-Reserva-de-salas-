@@ -11,12 +11,12 @@
 | Categoria | Total | Atendido | Parcial | Pendente (MVP) | Pós-MVP (Fora do escopo) |
 |---|---:|---:|---:|---:|---:|
 | **Requisitos Funcionais (`RF01–RF55`)** | 55 | 46 | 4 | 0 | 5 |
-| **Regras de Negócio (`RN01–RN31`)** | 31 | 19 | 7 | 5 | 0 |
+| **Regras de Negócio (`RN01–RN31`)** | 31 | 20 | 6 | 5 | 0 |
 
 - **RFs Parciais no MVP:** `RF40` (`curso` exibido sem campo de cadastro/edição), `RF46` (`regras_especificas` não exibidas antes da reserva), `RF50` (filtro verifica janela fixa de 30 min a partir de um instante, sem intervalo início/fim), `RF51` (notificações de reserva funcionam; avisos institucionais ainda são slides estáticos).
 - **RFs Pós-MVP (documentados como futuros):** `RF10`, `RF11`, `RF28`, `RF29`, `RF45`.
 - **RNs Pendentes (não aplicadas no código):** `RN06` (espaços exclusivos por perfil além de externos), `RN08` (duração máxima), `RN09` (limite de antecedência), `RN12` (validação de capacidade na reserva), `RN14` (validação do campo `exige_autorizacao` dos equipamentos na reserva).
-- **RNs Parciais (exigem reforço no backend/UI):** `RN01` (auto-cadastro permite escolher `professor`), `RN05` e `RN29` (RBAC de espaços/equipamentos/usuários apenas na UI), `RN07` (horário de funcionamento só na exibição da agenda; passado validado só na UI), `RN13` (`regras_especificas` salvas, mas não exibidas ao reservar), `RN17` (`aprovar_se_disponivel` não revalida bloqueios), `RN18` (criação de bloqueio não alerta sobre reservas existentes).
+- **RNs Parciais (exigem reforço no backend/UI):** `RN01` (auto-cadastro permite escolher `professor`), `RN05` e `RN29` (RBAC de espaços/equipamentos/usuários apenas na UI), `RN07` (horário de funcionamento só na exibição da agenda; passado validado só na UI), `RN13` (`regras_especificas` salvas, mas não exibidas ao reservar), `RN18` (criação de bloqueio não alerta sobre reservas existentes).
 
 ---
 
@@ -102,7 +102,7 @@
 | **RN14** | Equipamentos com autorização | Pendente | `services/equipamento_service.py`, `views/coordenador_view.py` | Flag `exige_autorizacao` existe no cadastro, mas nunca é verificada em `ReservaService`. |
 | **RN15** | Responsável pela reserva | Atendido | `services/reserva_service.py` | Toda reserva valida e vincula `responsavel_id` existente e ativo. |
 | **RN16** | Validação durante alteração | Atendido | `services/reserva_service.py` (`editar`), `models/reserva_model.py` (`atualizar_se_disponivel`) | Revalida sobreposição e bloqueios em transação (melhoria menor: checar também se espaço destino está `ativo=True`). |
-| **RN17** | Espaços indisponíveis | Parcial | `models/reserva_model.py` (`criar_se_disponivel`, `atualizar_se_disponivel`) | **`aprovar_se_disponivel` não verifica bloqueios ativos** criados depois da solicitação pendente. |
+| **RN17** | Espaços indisponíveis | Atendido | `models/reserva_model.py` | Criação, edição e aprovação verificam bloqueios ativos na transação da reserva. |
 | **RN18** | Bloqueio administrativo | Parcial | `services/bloqueio_service.py`, `views/coordenador_view.py` | Criar bloqueio não verifica se já existem reservas confirmadas/pendentes no mesmo período. |
 | **RN19** | Liberação após cancelamento | Atendido | `models/reserva_model.py` | Apenas status `pendente` e `reservada` ocupam agenda; `cancelada` e `rejeitada` liberam o período automaticamente. |
 | **RN20** | Registro de alterações | Atendido | `services/historico_service.py`, `services/reserva_service.py`, `services/bloqueio_service.py` | Registra criação, alteração, aprovação, rejeição, cancelamento e bloqueio (melhoria: preencher `dados_anteriores` na edição). |
@@ -124,7 +124,7 @@
 
 ### Para Desenvolvedores (Many / Jadson)
 1. **[Alta — Segurança / RN01]** Restringir o perfil padrão no auto-cadastro (`login_view.py` / `auth_service.py`) para impedir auto-promoção para `professor`.
-2. **[Alta — Integridade / RN17 e RN18]** Verificar `bloqueios` ativos dentro de `ReservaModel.aprovar_se_disponivel` e alertar sobre reservas conflitantes ao criar um bloqueio em `BloqueioService.criar`.
+2. **[Alta — Integridade / RN18]** Alertar sobre reservas conflitantes ao criar um bloqueio em `BloqueioService.criar`.
 3. **[Média — Segurança / RN05 e RN29]** Adicionar checagem de perfil `coordenador` em `EspacoService`, `EquipamentoService` e `UsuarioService`.
 4. **[Média — Performance]** Eliminar consulta N+1 de `_historico` dentro dos 50 expanders em `views/coordenador_view.py` (carregar histórico sob demanda) e adicionar validação de horário no passado em `ReservaService`.
 5. **[Baixa — Alinhamento RF46/RN13/RF40]** Exibir `regras_especificas` no diálogo de reserva e definir se `curso` (em `perfil_view.py`) será editável ou removido.

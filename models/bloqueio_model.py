@@ -15,7 +15,16 @@ class BloqueioModel:
             "ativo": True,
             "created_at": firestore.SERVER_TIMESTAMP,
         }
-        return self.collection.add(documento)[1].id
+        referencia = self.collection.document()
+        espaco = self.db.collection("espacos").document(dados["espaco_id"])
+        lote = self.db.batch()
+        lote.create(referencia, documento)
+        lote.update(espaco, {
+            "agenda_version": firestore.Increment(1),
+            "updated_at": firestore.SERVER_TIMESTAMP,
+        })
+        lote.commit()
+        return referencia.id
 
     def listar(self, apenas_ativos=True):
         consulta = self.collection

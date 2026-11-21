@@ -125,7 +125,7 @@ O MVP será considerado pronto para homologação quando todos os critérios aba
 #### Cenário 4.4: Bloqueio administrativo impede novas reservas e aprovações conflitantes (`RF36`, `RN17`, `RN18`, `RN31`)
 - **Dado** um bloqueio ativo criado pelo coordenador para o "Laboratório 02" de `01/10` a `05/10` por motivo "Manutenção"
 - **Quando** qualquer usuário tenta reservar ou editar uma reserva para esse período, **ou** o coordenador tenta aprovar uma solicitação pendente que colide com o bloqueio
-- **Então** o sistema impede a operação informando que o espaço está bloqueado no período. *(Nota: a verificação de bloqueio na aprovação está registrada como pendência para Devs na matriz de rastreabilidade).*
+- **Então** o sistema impede a operação informando que o espaço está bloqueado no período.
 
 #### Cenário 4.5: Controle administrativo de equipamentos e espaços (`RF34`, `RF35`, `RF52`, `RN05`, `RN29`)
 - **Dado** um usuário que **não** possui perfil `coordenador`

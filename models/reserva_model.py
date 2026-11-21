@@ -49,19 +49,7 @@ class ReservaModel:
                 ):
                     raise ValueError("O espaço já está ocupado nesse período.")
 
-            bloqueios_query = self.db.collection("bloqueios").where(
-                "espaco_id", "==", espaco_id
-            ).where("ativo", "==", True)
-            bloqueios = transacao.get(bloqueios_query)
-            for bloqueio in bloqueios:
-                bloqueio_dados = bloqueio.to_dict()
-                if self._sobrepoe(
-                    inicio,
-                    fim,
-                    bloqueio_dados.get("inicio"),
-                    bloqueio_dados.get("fim"),
-                ):
-                    raise ValueError("O espaço está bloqueado nesse período.")
+            self._verificar_bloqueios(transacao, espaco_id, inicio, fim)
 
             documento = {
                 **dados,
@@ -79,6 +67,15 @@ class ReservaModel:
             return referencia.id
 
         return executar(transacao)
+
+    def _verificar_bloqueios(self, transacao, espaco_id, inicio, fim):
+        consulta = self.db.collection("bloqueios").where(
+            "espaco_id", "==", espaco_id
+        ).where("ativo", "==", True)
+        for bloqueio in transacao.get(consulta):
+            dados = bloqueio.to_dict()
+            if self._sobrepoe(inicio, fim, dados.get("inicio"), dados.get("fim")):
+                raise ValueError("O espaço está bloqueado nesse período.")
 
     @staticmethod
     def _sobrepoe(inicio_novo, fim_novo, inicio_existente, fim_existente):
@@ -144,6 +141,8 @@ class ReservaModel:
                 ):
                     raise ValueError("Existe outra reserva confirmada nesse período.")
 
+            self._verificar_bloqueios(transacao, dados["espaco_id"], dados["inicio"], dados["fim"])
+
             transacao.update(referencia, {
                 "status": "reservada",
                 "aprovacao_necessaria": False,
@@ -191,19 +190,7 @@ class ReservaModel:
                 ):
                     raise ValueError("O espaço já está ocupado nesse período.")
 
-            bloqueios_query = self.db.collection("bloqueios").where(
-                "espaco_id", "==", dados["espaco_id"]
-            ).where("ativo", "==", True)
-            bloqueios = transacao.get(bloqueios_query)
-            for bloqueio in bloqueios:
-                bloqueio_dados = bloqueio.to_dict()
-                if self._sobrepoe(
-                    dados["inicio"],
-                    dados["fim"],
-                    bloqueio_dados.get("inicio"),
-                    bloqueio_dados.get("fim"),
-                ):
-                    raise ValueError("O espaço está bloqueado nesse período.")
+            self._verificar_bloqueios(transacao, dados["espaco_id"], dados["inicio"], dados["fim"])
 
             transacao.update(referencia, {
                 **dados,
