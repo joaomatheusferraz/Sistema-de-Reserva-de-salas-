@@ -97,6 +97,12 @@ def _formulario_cadastro():
             key="cadastro_senha",
             icon=":material/lock:",
         )
+        confirmar_senha = st.text_input(
+            "Confirmar senha",
+            type="password",
+            key="cadastro_confirmar_senha",
+            icon=":material/lock_reset:",
+        )
         cadastrar = st.form_submit_button(
             "Criar conta",
             type="primary",
@@ -105,6 +111,9 @@ def _formulario_cadastro():
         )
 
     if cadastrar:
+        if nova_senha != confirmar_senha:
+            st.error("As senhas digitadas não coincidem.", icon=":material/error:")
+            return
         with st.spinner("Criando sua conta..."):
             sucesso, mensagem = AuthController().registrar(
                 nome, email, novo_ra, nova_senha, perfil
