@@ -10,7 +10,8 @@ class EspacoService:
 
     def criar(self, nome, tipo, capacidade, localizacao=None,
               caracteristicas=None, equipamentos_ids=None,
-              regras_especificas=None):
+              regras_especificas=None, perfil=None):
+        self._exigir_coordenador(perfil)
         if not texto_obrigatorio(nome):
             raise ValueError("Informe o nome do espaço.")
         if tipo not in {item.value for item in TipoEspaco}:
@@ -36,7 +37,13 @@ class EspacoService:
     def listar(self, apenas_ativos=True):
         return self.model.listar(apenas_ativos=apenas_ativos)
 
-    def atualizar(self, espaco_id, dados):
+    @staticmethod
+    def _exigir_coordenador(perfil):
+        if perfil is not None and str(perfil).strip().lower() != "coordenador":
+            raise PermissionError("Apenas o coordenador possui permissão para gerenciar espaços.")
+
+    def atualizar(self, espaco_id, dados, perfil=None):
+        self._exigir_coordenador(perfil)
         if not texto_obrigatorio(espaco_id):
             raise ValueError("ID do espaço inválido.")
         if not dados or not isinstance(dados, dict):
@@ -49,7 +56,8 @@ class EspacoService:
             raise ValueError("A capacidade deve ser um inteiro positivo.")
         self.model.atualizar(espaco_id, dados)
 
-    def excluir(self, espaco_id):
+    def excluir(self, espaco_id, perfil=None):
+        self._exigir_coordenador(perfil)
         if not texto_obrigatorio(espaco_id):
             raise ValueError("ID do espaço inválido.")
         self.model.excluir(espaco_id)
