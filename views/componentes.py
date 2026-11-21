@@ -41,7 +41,7 @@ def carregar_ocupacao():
     try:
         bloqueios = BloqueioController().listar_vigentes()
     except Exception:
-        bloqueios = []
+        return [], "Não foi possível carregar os bloqueios das salas. Tente novamente mais tarde."
     ocupacao = list(reservas or []) + [
         {
             "id": b["id"],
@@ -129,6 +129,8 @@ def _equipamentos_html(nomes):
 
 def faixa_situacao(espaco_id, reservas):
     """Texto e cor da faixa no topo do card, como no protótipo."""
+    if reservas is None:
+        return "Disponibilidade desconhecida", "cinza", False
     situacao, _, cor, detalhe = situacao_sala(espaco_id, reservas)
     if situacao == "Ocupada":
         return f"Ocupado {detalhe}", "vermelho", True

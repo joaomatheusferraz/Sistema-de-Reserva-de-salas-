@@ -105,6 +105,8 @@ def espacos_view(usuario):
         reservas, erro = carregar_ocupacao()
     if erro:
         st.warning(erro)
+        if momento is not None:
+            return
 
     termo = busca.strip().lower()
 
@@ -143,7 +145,7 @@ def espacos_view(usuario):
     autorizados = set(usuario.get("espacos_autorizados_ids") or [])
 
     def ao_reservar(espaco):
-        if perfil not in PODEM_RESERVAR:
+        if erro or perfil not in PODEM_RESERVAR:
             return None
         if perfil == "externo" and espaco["id"] not in autorizados:
             return None  # RN28: externo só reserva espaços autorizados.
@@ -151,11 +153,11 @@ def espacos_view(usuario):
 
     grade_salas(
         filtrados,
-        reservas,
+        reservas if not erro else None,
         "salas",
         equipamentos=equipamentos,
         ao_reservar=ao_reservar,
-        motivo_sem_reserva="Sem autorização" if perfil == "externo" else None,
+        motivo_sem_reserva="Sem autorização" if not erro and perfil == "externo" else None,
         ao_editar=(lambda e: _editar_espaco(e, controller, equipamentos))
         if perfil == "coordenador" else None,
     )
