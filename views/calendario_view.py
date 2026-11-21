@@ -95,7 +95,7 @@ def calendario_view(usuario):
 
     # Calendário da sala (RF15/RF44): um dia + uma sala mostra também as janelas livres.
     if periodo == "Dia" and len(salas) == 1 and not busca:
-        linhas += _horarios_livres(linhas, referencia)
+        linhas += _horarios_livres(linhas, referencia, nomes[salas[0]])
 
     if not linhas:
         mensagem = (
@@ -149,7 +149,7 @@ def _janela(periodo, referencia):
     )
 
 
-def _horarios_livres(linhas, dia):
+def _horarios_livres(linhas, dia, sala):
     cursor = datetime.combine(dia, ABERTURA, tzinfo=FUSO_LOCAL)
     fechamento = datetime.combine(dia, FECHAMENTO, tzinfo=FUSO_LOCAL)
     livres = []
@@ -160,7 +160,7 @@ def _horarios_livres(linhas, dia):
     if cursor < fechamento:
         livres.append((cursor, fechamento))
     return [
-        _linha(inicio, fim, "", "", "", "Disponível")
+        _linha(inicio, fim, sala, "", "", "Disponível")
         for inicio, fim in livres
         if inicio < fim
     ]
