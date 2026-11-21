@@ -105,9 +105,9 @@ def _no_periodo(reserva, periodo, momento):
         return periodo == "Todas"
     inicio = para_local(inicio)
     if periodo == "Últimos 30 dias":
-        return inicio >= momento - timedelta(days=30)
+        return momento - timedelta(days=30) <= inicio <= momento
     if periodo == "Últimos 7 dias":
-        return inicio >= momento - timedelta(days=7)
+        return momento - timedelta(days=7) <= inicio <= momento
     if periodo == "Próximas":
         return para_local(reserva["fim"]) >= momento
     return True
