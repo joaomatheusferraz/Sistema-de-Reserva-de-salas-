@@ -28,10 +28,7 @@ class ReservaModel:
 
         @firestore.transactional
         def executar(transacao):
-            espaco_ref = self.db.collection("espacos").document(espaco_id)
-            espaco = espaco_ref.get(transaction=transacao)
-            if not espaco.exists:
-                raise ValueError("Espaço não encontrado.")
+            espaco_ref = self._obter_espaco_ativo(transacao, espaco_id)
 
             reservas_query = self.collection.where(
                 "espaco_id", "==", espaco_id
@@ -67,6 +64,15 @@ class ReservaModel:
             return referencia.id
 
         return executar(transacao)
+
+    def _obter_espaco_ativo(self, transacao, espaco_id):
+        referencia = self.db.collection("espacos").document(espaco_id)
+        espaco = referencia.get(transaction=transacao)
+        if not espaco.exists:
+            raise ValueError("Espaço não encontrado.")
+        if not espaco.to_dict().get("ativo", True):
+            raise ValueError("O espaço está desativado.")
+        return referencia
 
     def _verificar_bloqueios(self, transacao, espaco_id, inicio, fim):
         consulta = self.db.collection("bloqueios").where(
@@ -119,10 +125,7 @@ class ReservaModel:
             if dados.get("status") != "pendente":
                 raise ValueError("Somente reservas pendentes podem ser aprovadas.")
 
-            espaco_ref = self.db.collection("espacos").document(dados["espaco_id"])
-            espaco = espaco_ref.get(transaction=transacao)
-            if not espaco.exists:
-                raise ValueError("Espaço não encontrado.")
+            espaco_ref = self._obter_espaco_ativo(transacao, dados["espaco_id"])
 
             confirmadas = transacao.get(
                 self.collection.where("espaco_id", "==", dados["espaco_id"])
@@ -167,10 +170,7 @@ class ReservaModel:
             if not atual.exists:
                 raise ValueError("Reserva não encontrada.")
 
-            espaco_ref = self.db.collection("espacos").document(dados["espaco_id"])
-            espaco = espaco_ref.get(transaction=transacao)
-            if not espaco.exists:
-                raise ValueError("Espaço não encontrado.")
+            espaco_ref = self._obter_espaco_ativo(transacao, dados["espaco_id"])
 
             reservas_query = self.collection.where(
                 "espaco_id", "==", dados["espaco_id"]
