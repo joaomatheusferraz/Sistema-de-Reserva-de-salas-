@@ -72,6 +72,13 @@ def dialogo_reservar(espaco, usuario, perfil, ocupacao):
     if not enviar:
         return
 
+    if fim <= inicio:
+        st.error("O horário de término deve ser posterior ao horário de início.", icon=":material/error:")
+        return
+    if inicio < time(7, 0) or fim > time(23, 0):
+        st.error("O horário de funcionamento do campus é das 07:00 às 23:00.", icon=":material/error:")
+        return
+
     inicio_dt, fim_dt = combinar_local(dia, inicio), combinar_local(dia, fim)
     if inicio_dt < agora():
         st.error("Escolha um horário que ainda não passou.", icon=":material/error:")
@@ -144,9 +151,15 @@ def dialogo_editar(reserva, usuario, perfil, espacos, rotulos, ocupacao):
         fim = st.time_input("Fim", value=fim_atual.time().replace(tzinfo=None), step=timedelta(minutes=30))
     finalidade = st.text_area("Motivo", value=reserva.get("finalidade", ""))
     if st.button("Salvar alterações", icon=":material/save:", type="primary"):
+        if fim <= inicio:
+            st.error("O horário de término deve ser posterior ao horário de início.", icon=":material/error:")
+            return
+        if inicio < time(7, 0) or fim > time(23, 0):
+            st.error("O horário de funcionamento do campus é das 07:00 às 23:00.", icon=":material/error:")
+            return
         inicio_dt, fim_dt = combinar_local(dia, inicio), combinar_local(dia, fim)
         if inicio_dt < agora():
-            st.error("Escolha um horário que ainda não passou.")
+            st.error("Escolha um horário que ainda não passou.", icon=":material/error:")
             return
         ok, mensagem = ReservaController().editar_reserva(
             reserva["id"],
@@ -157,4 +170,4 @@ def dialogo_editar(reserva, usuario, perfil, espacos, rotulos, ocupacao):
         if ok:
             st.session_state["reserva_mensagem"] = mensagem
             st.rerun()
-        st.error(mensagem)
+        st.error(mensagem, icon=":material/error:")
