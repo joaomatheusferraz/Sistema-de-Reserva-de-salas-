@@ -3,6 +3,7 @@ from datetime import datetime, time, timedelta
 import streamlit as st
 
 from controllers.usuario_controller import UsuarioController
+from domain.enums import HORA_ABERTURA as ABERTURA, HORA_FECHAMENTO as FECHAMENTO
 from utils.ui import (
     FUSO_LOCAL,
     STATUS,
@@ -14,10 +15,6 @@ from utils.ui import (
     para_local,
 )
 from views.componentes import carregar_espacos, carregar_ocupacao, rotulos_unicos
-
-# Janela usada para calcular os horários livres de uma sala (RN07).
-ABERTURA = time(7, 0)
-FECHAMENTO = time(23, 0)
 
 
 def calendario_view(usuario):

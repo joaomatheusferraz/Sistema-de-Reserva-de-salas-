@@ -1,6 +1,12 @@
 from datetime import datetime, time
 
-from domain.enums import Perfil
+from domain.enums import (
+    HORA_ABERTURA,
+    HORA_FECHAMENTO,
+    PODEM_RESERVAR,
+    Perfil,
+    StatusReserva,
+)
 from models.espaco_model import EspacoModel
 from models.reserva_model import ReservaModel
 from models.usuario_model import UsuarioModel
@@ -11,15 +17,11 @@ from utils.validators import texto_obrigatorio
 
 class ReservaService:
 
-    STATUS_PENDENTE = "pendente"
-    STATUS_RESERVADA = "reservada"
-    HORA_ABERTURA = time(7, 0)
-    HORA_FECHAMENTO = time(23, 0)
-    PERFIS_QUE_RESERVAM = {
-        Perfil.PROFESSOR.value,
-        Perfil.EXTERNO.value,
-        Perfil.COORDENADOR.value,
-    }
+    STATUS_PENDENTE = StatusReserva.PENDENTE.value
+    STATUS_RESERVADA = StatusReserva.RESERVADA.value
+    HORA_ABERTURA = HORA_ABERTURA
+    HORA_FECHAMENTO = HORA_FECHAMENTO
+    PERFIS_QUE_RESERVAM = PODEM_RESERVAR
 
     def __init__(
         self,

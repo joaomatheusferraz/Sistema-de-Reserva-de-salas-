@@ -1,5 +1,6 @@
 import streamlit as st
 
+from domain.enums import PODEM_RESERVAR
 from utils.estilo import aplicar_estilo
 from utils.session import autenticado, usuario_atual
 from utils.ui import normalizar_perfil, registrar_paginas
@@ -19,8 +20,6 @@ st.set_page_config(
     layout="wide",
 )
 aplicar_estilo()
-
-PODEM_RESERVAR = {"professor", "externo", "coordenador"}
 
 
 # Cada página é um callable sem argumentos; o usuário vem da sessão.

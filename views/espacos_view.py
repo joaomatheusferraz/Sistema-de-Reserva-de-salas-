@@ -5,6 +5,7 @@ from datetime import timedelta
 import streamlit as st
 
 from controllers.espaco_controller import EspacoController
+from domain.enums import PODEM_RESERVAR
 from models.reserva_model import ReservaModel
 from utils.ui import FUSO_LOCAL, estado_vazio, normalizar_perfil, tipo_espaco
 from views.componentes import (
@@ -15,7 +16,6 @@ from views.componentes import (
 )
 from views.reserva_dialogos import dialogo_reservar
 
-PODEM_RESERVAR = {"professor", "externo", "coordenador"}
 CAPACIDADES = {"Qualquer": 0, ">20": 21, ">50": 51, ">100": 101}
 
 
