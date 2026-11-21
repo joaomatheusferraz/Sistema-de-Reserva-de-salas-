@@ -129,7 +129,7 @@ def _concluir(ok, mensagem):
 # ---------------------------------------------------------------------------
 # Solicitações pendentes
 
-COLUNAS_PENDENTES = [5, 1.3, 1.6, 1]
+COLUNAS_PENDENTES = [4.2, 1.3, 1.6, 1.9]
 
 
 def _solicitacoes(ctx, pendentes):
@@ -166,9 +166,9 @@ def _linha_pendente(ctx, reserva):
         )
         with acoes:
             with st.container(horizontal=True, gap="small", horizontal_alignment="center"):
-                if st.button("", icon=":material/check:", key=f"aprovar_{rid}", help="Aprovar"):
+                if st.button("Aprovar", icon=":material/check:", key=f"aprovar_{rid}", help="Aprovar"):
                     _concluir(*ctx["reservas"].aprovar_reserva(rid, ctx["usuario"]["id"], ctx["perfil"]))
-                if st.button("", icon=":material/close:", key=f"rejeitar_{rid}", help="Rejeitar"):
+                if st.button("Rejeitar", icon=":material/close:", key=f"rejeitar_{rid}", help="Rejeitar"):
                     _rejeitar(ctx, rid)
 
 

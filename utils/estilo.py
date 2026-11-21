@@ -128,7 +128,8 @@ section[data-testid="stSidebar"] { min-width: 290px !important; max-width: 290px
 [data-testid="stLayoutWrapper"]:has(> .st-key-banner_icone) { margin-right: 9%; }
 .ur-icone.ur-icone-banner { font-size: 68px; color: #FFFFFF; display: block; }
 .st-key-banner_nav { background: #13305F; border-radius: 999px; padding: 2px 8px; }
-.st-key-banner_nav button { min-height: 28px; height: 28px; padding: 0 4px; }
+.st-key-banner_nav button { min-height: 28px; height: 28px; padding: 0 8px; }
+.st-key-banner_nav button p { color: #FFFFFF; font-size: 13px; margin: 0; }
 .st-key-banner_nav button [data-testid="stIconMaterial"] { color: #FFFFFF; }
 .ur-pontos { display: flex; gap: 6px; align-items: center; height: 28px; }
 .ur-pontos span { width: 7px; height: 7px; border-radius: 99px; background: rgba(255,255,255,.55); }
@@ -188,12 +189,15 @@ section[data-testid="stSidebar"] { min-width: 290px !important; max-width: 290px
 [class*="st-key-card_metrica"] [data-testid="stCaptionContainer"] p { font-size: 16px; color: #4B5563; }
 [class*="st-key-card_metrica"] h2 { font-size: 38px; font-weight: 800; padding: .1rem 0 .3rem; }
 [class*="st-key-aprovar_"] button, [class*="st-key-rejeitar_"] button {
-  width: 34px; height: 30px; min-height: 30px; padding: 0; border: none;
+  min-width: 38px; width: auto; height: 32px; min-height: 32px; padding: 0 10px; border: none; border-radius: 6px;
 }
 [class*="st-key-aprovar_"] button { background: #22C55E; }
 [class*="st-key-aprovar_"] button:hover { background: #16A34A; }
 [class*="st-key-rejeitar_"] button { background: #EF4444; }
 [class*="st-key-rejeitar_"] button:hover { background: #DC2626; }
+[class*="st-key-aprovar_"] button p, [class*="st-key-rejeitar_"] button p {
+  color: #FFFFFF !important; font-size: 13px; font-weight: 600; margin: 0;
+}
 [class*="st-key-aprovar_"] [data-testid="stIconMaterial"],
 [class*="st-key-rejeitar_"] [data-testid="stIconMaterial"] { color: #FFFFFF; font-size: 18px; }
 
@@ -206,8 +210,9 @@ section[data-testid="stSidebar"] { min-width: 290px !important; max-width: 290px
 
 /* ---------- Minhas reservas ---------- */
 [class*="st-key-tab_"] button {
-  width: 34px; height: 32px; min-height: 32px; padding: 0; background: #FFFFFF;
+  min-width: 34px; width: auto; height: 32px; min-height: 32px; padding: 0 8px; background: #FFFFFF;
 }
+[class*="st-key-tab_"] button p { font-size: 13px; margin: 0; }
 [class*="st-key-pagina_"] button { min-width: 34px; height: 32px; min-height: 32px; padding: 0 8px; }
 
 /* ---------- Meu perfil ---------- */

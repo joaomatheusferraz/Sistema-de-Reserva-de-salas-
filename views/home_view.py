@@ -77,14 +77,14 @@ def _banner():
             st.space("medium")
             with st.container(key="banner_nav", horizontal=True, vertical_alignment="center",
                               gap="xsmall", width="content"):
-                st.button("", icon=":material/chevron_left:", type="tertiary", key="banner_ant",
-                          on_click=_mudar_slide, args=(-1,), help="Anterior")
+                st.button("Anterior", icon=":material/chevron_left:", type="tertiary", key="banner_ant",
+                          on_click=_mudar_slide, args=(-1,), help="Slide anterior")
                 pontos = "".join(
                     f'<span class="{"ativo" if i == atual else ""}"></span>' for i in range(len(SLIDES))
                 )
                 st.html(f'<div class="ur-pontos">{pontos}</div>', width="content")
-                st.button("", icon=":material/chevron_right:", type="tertiary", key="banner_prox",
-                          on_click=_mudar_slide, args=(1,), help="Próximo")
+                st.button("Próximo", icon=":material/chevron_right:", type="tertiary", key="banner_prox",
+                          on_click=_mudar_slide, args=(1,), help="Próximo slide")
 
 
 def _notificacoes(usuario):
@@ -108,7 +108,7 @@ def _notificacoes(usuario):
             with st.container(horizontal=True, vertical_alignment="center"):
                 quando = formatar_data(n["created_at"]) if n.get("created_at") else ""
                 st.markdown(f":{cor}[{icone}] {n.get('mensagem')}  \n:gray[{quando}]")
-                if st.button("", icon=":material/close:", key=f"notif_{n['id']}", help="Marcar como lida", type="tertiary"):
+                if st.button("Lida", icon=":material/done:", key=f"notif_{n['id']}", help="Marcar como lida", type="tertiary"):
                     if controller.marcar_como_lida(n["id"]):
                         st.rerun()
                     st.warning("Não foi possível marcar a notificação como lida.")

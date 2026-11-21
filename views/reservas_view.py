@@ -20,7 +20,7 @@ from views.reserva_dialogos import dialogo_cancelar, dialogo_detalhes, dialogo_e
 POR_PAGINA = 10
 PERIODOS = ["Últimos 30 dias", "Últimos 7 dias", "Próximas", "Todas"]
 STATUS_FILTRO = ["Todos", "Confirmada", "Pendente", "Concluída", "Cancelada", "Recusada", "Expirada"]
-COLUNAS = [1.1, 1.1, 2.4, 2.4, 1.2, 0.9]
+COLUNAS = [1.1, 1.1, 2.0, 2.0, 1.2, 1.6]
 
 
 def reservas_view(usuario):
@@ -139,7 +139,7 @@ def _linha(reserva, nomes, usuario, perfil, reservaveis, momento):
                 if ativa:
                     editavel = reserva.get("status") == "pendente" or perfil == "coordenador"
                     if st.button(
-                        "", icon=":material/edit:", key=f"tab_editar_{rid}",
+                        "Editar", icon=":material/edit:", key=f"tab_editar_{rid}",
                         disabled=not editavel,
                         help="Editar" if editavel else "Reservas aprovadas só podem ser alteradas pela coordenação",
                     ):
@@ -148,9 +148,9 @@ def _linha(reserva, nomes, usuario, perfil, reservaveis, momento):
                             st.warning(erro, icon=":material/warning:")
                         else:
                             dialogo_editar(reserva, usuario, perfil, reservaveis, nomes, ocupacao)
-                    if st.button("", icon=":material/cancel:", key=f"tab_cancelar_{rid}", help="Cancelar"):
+                    if st.button("Cancelar", icon=":material/cancel:", key=f"tab_cancelar_{rid}", help="Cancelar reserva"):
                         dialogo_cancelar(reserva, usuario, perfil)
-                elif st.button("", icon=":material/visibility:", key=f"tab_ver_{rid}", help="Ver detalhes"):
+                elif st.button("Ver", icon=":material/visibility:", key=f"tab_ver_{rid}", help="Ver detalhes da reserva"):
                     dialogo_detalhes(reserva, nome_sala)
 
 
@@ -161,12 +161,12 @@ def _ir_para_pagina(numero):
 def _paginacao(pagina, total):
     with st.container(horizontal=True, horizontal_alignment="right", gap="xsmall"):
         botoes = [
-            ("primeira", ":material/keyboard_double_arrow_left:", 1, pagina == 1),
-            ("anterior", ":material/chevron_left:", pagina - 1, pagina == 1),
+            ("primeira", "«", 1, pagina == 1, "Primeira página"),
+            ("anterior", "‹", pagina - 1, pagina == 1, "Página anterior"),
         ]
-        for nome, icone, destino, desabilitado in botoes:
-            st.button("", icon=icone, key=f"pagina_{nome}", disabled=desabilitado,
-                      on_click=_ir_para_pagina, args=(destino,))
+        for nome, rotulo, destino, desabilitado, ajuda in botoes:
+            st.button(rotulo, key=f"pagina_{nome}", disabled=desabilitado,
+                      help=ajuda, on_click=_ir_para_pagina, args=(destino,))
         janela = range(max(1, pagina - 2), min(total, pagina + 2) + 1)
         for numero in janela:
             st.button(
@@ -174,9 +174,9 @@ def _paginacao(pagina, total):
                 type="primary" if numero == pagina else "secondary",
                 on_click=_ir_para_pagina, args=(numero,),
             )
-        for nome, icone, destino, desabilitado in [
-            ("proxima", ":material/chevron_right:", pagina + 1, pagina == total),
-            ("ultima", ":material/keyboard_double_arrow_right:", total, pagina == total),
+        for nome, rotulo, destino, desabilitado, ajuda in [
+            ("proxima", "›", pagina + 1, pagina == total, "Próxima página"),
+            ("ultima", "»", total, pagina == total, "Última página"),
         ]:
-            st.button("", icon=icone, key=f"pagina_{nome}", disabled=desabilitado,
-                      on_click=_ir_para_pagina, args=(destino,))
+            st.button(rotulo, key=f"pagina_{nome}", disabled=desabilitado,
+                      help=ajuda, on_click=_ir_para_pagina, args=(destino,))
