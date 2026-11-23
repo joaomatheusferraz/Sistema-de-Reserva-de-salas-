@@ -66,6 +66,9 @@ section[data-testid="stSidebar"] { min-width: 290px !important; max-width: 290px
 [data-testid="stToolbar"] {
   position: fixed !important; top: auto !important; left: auto !important;
   right: 1rem !important; bottom: 4rem !important; z-index: 999990;
+  /* O Streamlit dá width/height 100% à barra; com position fixed e fundo
+     branco ela cobria a tela inteira no Cloud (tela branca). */
+  width: auto !important; height: auto !important;
 }
 [data-testid="stToolbar"]:has([data-testid="stToolbarActions"] :is(button, a)) {
   background: #FFFFFF; border: 1px solid var(--ur-borda); border-radius: 10px;
