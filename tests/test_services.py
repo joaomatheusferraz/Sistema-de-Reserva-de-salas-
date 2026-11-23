@@ -132,7 +132,10 @@ class FakeHttp:
 class ServiceTests(unittest.TestCase):
 
     def setUp(self):
-        self.inicio = datetime(2026, 1, 1, 10, 0)
+        # Sempre no futuro: o serviço rejeita reservas em horários já passados (RN07).
+        self.inicio = (datetime.now() + timedelta(days=1)).replace(
+            hour=10, minute=0, second=0, microsecond=0
+        )
         self.fim = self.inicio + timedelta(hours=1)
         self.history = FakeHistory()
         self.notifications = FakeNotifications()
@@ -329,8 +332,8 @@ class ServiceTests(unittest.TestCase):
     def test_operating_hours_validation_rn07(self):
         service = self.make_reservation_service()
         # Horário antes das 07:00
-        madrugada_ini = datetime(2026, 1, 1, 6, 0)
-        madrugada_fim = datetime(2026, 1, 1, 7, 0)
+        madrugada_ini = self.inicio.replace(hour=6)
+        madrugada_fim = self.inicio.replace(hour=7)
         with self.assertRaises(ValueError) as ctx:
             service.criar("e1", "u1", madrugada_ini, madrugada_fim, "aula", "professor")
         self.assertIn("07:00 e 23:00", str(ctx.exception))

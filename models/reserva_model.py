@@ -2,6 +2,7 @@ from datetime import timezone
 
 from firebase_admin import firestore
 
+from domain.enums import STATUS_OCUPAM_AGENDA
 from utils.firebase_utils import init_firestore
 
 
@@ -36,7 +37,7 @@ class ReservaModel:
             reservas = transacao.get(reservas_query)
             for reserva in reservas:
                 reserva_dados = reserva.to_dict()
-                if reserva_dados.get("status") not in {"pendente", "reservada"}:
+                if reserva_dados.get("status") not in STATUS_OCUPAM_AGENDA:
                     continue
                 if self._sobrepoe(
                     inicio,
@@ -180,7 +181,7 @@ class ReservaModel:
                 if reserva.id == reserva_id:
                     continue
                 reserva_dados = reserva.to_dict()
-                if reserva_dados.get("status") not in {"pendente", "reservada"}:
+                if reserva_dados.get("status") not in STATUS_OCUPAM_AGENDA:
                     continue
                 if self._sobrepoe(
                     dados["inicio"],
@@ -234,7 +235,7 @@ class ReservaModel:
     def listar_ativas(self):
         reservas = []
         consulta = self.collection.where(
-            "status", "in", ["pendente", "reservada"]
+            "status", "in", sorted(STATUS_OCUPAM_AGENDA)
         )
         for documento in consulta.stream():
             dados = documento.to_dict()

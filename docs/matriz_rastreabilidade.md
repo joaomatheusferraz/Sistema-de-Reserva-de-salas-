@@ -10,13 +10,13 @@
 
 | Categoria | Total | Atendido | Parcial | Pendente (MVP) | Pós-MVP (Fora do escopo) |
 |---|---:|---:|---:|---:|---:|
-| **Requisitos Funcionais (`RF01–RF55`)** | 55 | 46 | 4 | 0 | 5 |
-| **Regras de Negócio (`RN01–RN31`)** | 31 | 20 | 6 | 5 | 0 |
+| **Requisitos Funcionais (`RF01–RF55`)** | 55 | 47 | 3 | 0 | 5 |
+| **Regras de Negócio (`RN01–RN31`)** | 31 | 24 | 2 | 5 | 0 |
 
-- **RFs Parciais no MVP:** `RF40` (`curso` exibido sem campo de cadastro/edição), `RF46` (`regras_especificas` não exibidas antes da reserva), `RF50` (filtro verifica janela fixa de 30 min a partir de um instante, sem intervalo início/fim), `RF51` (notificações de reserva funcionam; avisos institucionais ainda são slides estáticos).
+- **RFs Parciais no MVP:** `RF40` (`curso` exibido sem campo de cadastro/edição), `RF50` (filtro verifica janela fixa de 30 min a partir de um instante, sem intervalo início/fim), `RF51` (notificações de reserva funcionam; avisos institucionais ainda são slides estáticos).
 - **RFs Pós-MVP (documentados como futuros):** `RF10`, `RF11`, `RF28`, `RF29`, `RF45`.
 - **RNs Pendentes (não aplicadas no código):** `RN06` (espaços exclusivos por perfil além de externos), `RN08` (duração máxima), `RN09` (limite de antecedência), `RN12` (validação de capacidade na reserva), `RN14` (validação do campo `exige_autorizacao` dos equipamentos na reserva).
-- **RNs Parciais (exigem reforço no backend/UI):** `RN01` (auto-cadastro permite escolher `professor`), `RN05` e `RN29` (RBAC de espaços/equipamentos/usuários apenas na UI), `RN07` (horário de funcionamento só na exibição da agenda; passado validado só na UI), `RN13` (`regras_especificas` salvas, mas não exibidas ao reservar), `RN18` (criação de bloqueio não alerta sobre reservas existentes).
+- **RNs Parciais (exigem reforço no backend/UI):** `RN05` e `RN29` (os serviços de espaço e equipamento exigem `coordenador`, mas a checagem é ignorada quando `perfil` não é informado e as views/controllers ainda não repassam o perfil).
 
 ---
 
@@ -69,7 +69,7 @@
 | **RF43** | Filtro do calendário | MVP | Atendido | `views/calendario_view.py` | Alterna visualização por Dia, Semana ou Mês. |
 | **RF44** | Visualização de horários livres | MVP | Atendido | `views/calendario_view.py` | `_horarios_livres` calcula lacunas livres no modo Dia + 1 sala. |
 | **RF45** | Detalhes pelo mapa | Pós-MVP | Pós-MVP | — | Dependente de `RF10` (Mapa 2D). |
-| **RF46** | Características do espaço | MVP | Parcial | `views/componentes.py`, `views/espacos_view.py` | Exibe características e equipamentos no card, mas **não exibe `regras_especificas`** antes de reservar. |
+| **RF46** | Características do espaço | MVP | Atendido | `views/componentes.py`, `views/espacos_view.py`, `views/reserva_dialogos.py` | Exibe características e equipamentos no card e as `regras_especificas` no diálogo de reserva, antes da confirmação (`tests/test_regras_espaco.py`). |
 | **RF47** | Confirmação de cancelamento | MVP | Atendido | `views/reserva_dialogos.py` | Diálogo modal `dialogo_cancelar` exige confirmação ("Sim, cancelar"). |
 | **RF48** | Pesquisa por capacidade | MVP | Atendido | `views/espacos_view.py` | Filtro por faixas (`Qualquer`, `>20`, `>50`, `>100`). |
 | **RF49** | Pesquisa por equipamentos | MVP | Atendido | `views/espacos_view.py` | Multiselect de equipamentos exigindo que o espaço contenha todos os selecionados. |
@@ -86,24 +86,24 @@
 
 | ID | Regra de Negócio | Status (`main`) | Onde está no Código / Testes | Lacunas Identificadas |
 |---|---|---|---|---|
-| **RN01** | Níveis de acesso | Parcial | `domain/enums.py`, `main.py`, `services/reserva_service.py`, `tests/test_services.py` | Auto-cadastro (`views/login_view.py`, `services/auth_service.py`) permite qualquer usuário se cadastrar como `professor` sem aprovação. |
+| **RN01** | Níveis de acesso | Atendido | `domain/enums.py`, `main.py`, `services/auth_service.py`, `services/reserva_service.py`, `tests/test_services.py`, `tests/test_regras_negocio.py` | Auto-cadastro só aceita `aluno` e `externo` (backend e tela); o perfil informado na reserva precisa corresponder ao do usuário. |
 | **RN02** | Reservas no mesmo dia | Atendido | `models/reserva_model.py` (`_sobrepoe`), `tests/test_services.py` | Permite horários adjacentes no mesmo dia; coberto por teste unitário. |
 | **RN03** | Autenticação | Atendido | `main.py`, `utils/session.py`, `services/auth_service.py` | Bloqueia navegação sem login e valida token Firebase. |
 | **RN04** | Permissão de alteração | Atendido | `services/reserva_service.py`, `tests/test_services.py` | Valida dono ou coordenador e impede professor de editar reserva já aprovada. |
-| **RN05** | Permissões administrativas | Parcial | `views/coordenador_view.py`, `services/reserva_service.py`, `services/bloqueio_service.py` | Falta validação de `perfil == "coordenador"` no backend de `EspacoService`, `EquipamentoService` e `UsuarioController`. |
+| **RN05** | Permissões administrativas | Parcial | `views/coordenador_view.py`, `services/reserva_service.py`, `services/bloqueio_service.py`, `services/espaco_service.py`, `services/equipamento_service.py` | Reservas e bloqueios exigem `coordenador` no serviço (testado). Em `EspacoService`/`EquipamentoService` a checagem existe, mas é pulada quando `perfil=None` (padrão) e `espacos_view.py`/`coordenador_view.py` não repassam o perfil: falta torná-la obrigatória. |
 | **RN06** | Espaços exclusivos | Pendente | — | Apenas externos têm restrição por espaço (`RN28`); não há campo de restrição de perfis no modelo de espaço. |
-| **RN07** | Horário de funcionamento | Parcial | `views/calendario_view.py` (`ABERTURA`/`FECHAMENTO`), `views/reserva_dialogos.py` | `ReservaService` não valida horário de funcionamento (07h–23h) nem bloqueia datas passadas no backend. |
+| **RN07** | Horário de funcionamento | Atendido | `services/reserva_service.py`, `views/calendario_view.py`, `views/reserva_dialogos.py`, `tests/test_reserva_horarios.py` | `ReservaService` valida 07h–23h, início e fim no mesmo dia e bloqueia criação em horário já passado (além da validação na UI). |
 | **RN08** | Duração máxima | Pendente | — | Não há limite de duração máxima configurado ou validado em `ReservaService`. |
 | **RN09** | Antecedência | Pendente | — | Não há regra de antecedência mínima/máxima validada em `ReservaService`. |
 | **RN10** | Sobreposição | Atendido | `models/reserva_model.py`, `tests/test_services.py` | Garantida por transação no Firestore + `agenda_version` + normalização UTC/BRT. |
 | **RN11** | Cancelamento | Atendido | `services/reserva_service.py` (`cancelar`), `views/reserva_dialogos.py` | Cancela reservas ativas com confirmação e registra histórico/notificação. |
 | **RN12** | Capacidade | Pendente | `services/espaco_service.py` | Capacidade é cadastrada e filtrada, mas não existe campo de número de participantes na reserva para validar limite. |
-| **RN13** | Regras específicas dos laboratórios | Parcial | `services/espaco_service.py`, `views/espacos_view.py` | Campo `regras_especificas` é salvo, mas não é exibido ao usuário antes da reserva. |
+| **RN13** | Regras específicas dos laboratórios | Atendido | `services/espaco_service.py`, `views/espacos_view.py`, `views/reserva_dialogos.py`, `tests/test_regras_espaco.py` | Campo `regras_especificas` é exibido ao solicitante no diálogo de reserva, antes da confirmação. |
 | **RN14** | Equipamentos com autorização | Pendente | `services/equipamento_service.py`, `views/coordenador_view.py` | Flag `exige_autorizacao` existe no cadastro, mas nunca é verificada em `ReservaService`. |
 | **RN15** | Responsável pela reserva | Atendido | `services/reserva_service.py` | Toda reserva valida e vincula `responsavel_id` existente e ativo. |
 | **RN16** | Validação durante alteração | Atendido | `services/reserva_service.py` (`editar`), `models/reserva_model.py` (`atualizar_se_disponivel`) | Revalida sobreposição e bloqueios em transação (melhoria menor: checar também se espaço destino está `ativo=True`). |
 | **RN17** | Espaços indisponíveis | Atendido | `models/reserva_model.py` | Criação, edição e aprovação verificam bloqueios ativos na transação da reserva. |
-| **RN18** | Bloqueio administrativo | Parcial | `services/bloqueio_service.py`, `views/coordenador_view.py` | Criar bloqueio não verifica se já existem reservas confirmadas/pendentes no mesmo período. |
+| **RN18** | Bloqueio administrativo | Atendido | `services/bloqueio_service.py`, `controllers/bloqueio_controller.py`, `views/coordenador_view.py`, `tests/test_bloqueios.py` | Ao criar o bloqueio, as reservas pendentes/confirmadas do período são identificadas, gravadas em `reservas_conflitantes_ids` e contadas no histórico. Melhoria futura: avisar o coordenador na tela. |
 | **RN19** | Liberação após cancelamento | Atendido | `models/reserva_model.py` | Apenas status `pendente` e `reservada` ocupam agenda; `cancelada` e `rejeitada` liberam o período automaticamente. |
 | **RN20** | Registro de alterações | Atendido | `services/historico_service.py`, `services/reserva_service.py`, `services/bloqueio_service.py` | Registra criação, alteração, aprovação, rejeição, cancelamento e bloqueio (melhoria: preencher `dados_anteriores` na edição). |
 | **RN21** | Status pendente | Atendido | `services/reserva_service.py`, `tests/test_services.py` | Solicitações de professor/externo nascem `pendente` até análise. |
@@ -114,7 +114,7 @@
 | **RN26** | Reserva direta do coordenador | Atendido | `services/reserva_service.py`, `tests/test_services.py` | Reserva do coordenador nasce `reservada` com `aprovacao_necessaria=False`. |
 | **RN27** | Finalidade da reserva | Atendido | `services/reserva_service.py` | Obrigatória na criação e edição. |
 | **RN28** | Usuários externos | Atendido | `services/reserva_service.py`, `views/espacos_view.py`, `tests/test_services.py` | Valida `espacos_autorizados_ids` tanto na criação quanto na edição. |
-| **RN29** | Controle de equipamentos | Parcial | `views/coordenador_view.py`, `services/equipamento_service.py` | Restrito ao coordenador na UI, mas `EquipamentoService` ainda não exige `perfil == "coordenador"`. |
+| **RN29** | Controle de equipamentos | Parcial | `views/coordenador_view.py`, `services/equipamento_service.py`, `tests/test_equipamento_service.py` | Restrito ao coordenador na UI; o serviço rejeita outros perfis, mas só quando `perfil` é informado (mesma lacuna da `RN05`). |
 | **RN30** | Consulta por alunos | Atendido | `main.py`, `services/reserva_service.py`, `tests/test_services.py` | Aluno consulta espaços/calendário e recebe `PermissionError` se tentar criar reserva. |
 | **RN31** | Bloqueio durante manutenção | Atendido | `models/reserva_model.py`, `services/bloqueio_service.py` | Impede novas reservas e edições em períodos bloqueados. |
 
@@ -123,17 +123,27 @@
 ## 4. Encaminhamento de Pendências no Kanban (Por Papel)
 
 ### Para Desenvolvedores (Many / Jadson)
-1. **[Alta — Segurança / RN01]** Restringir o perfil padrão no auto-cadastro (`login_view.py` / `auth_service.py`) para impedir auto-promoção para `professor`.
-2. **[Alta — Integridade / RN18]** Alertar sobre reservas conflitantes ao criar um bloqueio em `BloqueioService.criar`.
-3. **[Média — Segurança / RN05 e RN29]** Adicionar checagem de perfil `coordenador` em `EspacoService`, `EquipamentoService` e `UsuarioService`.
-4. **[Média — Performance]** Eliminar consulta N+1 de `_historico` dentro dos 50 expanders em `views/coordenador_view.py` (carregar histórico sob demanda) e adicionar validação de horário no passado em `ReservaService`.
-5. **[Baixa — Alinhamento RF46/RN13/RF40]** Exibir `regras_especificas` no diálogo de reserva e definir se `curso` (em `perfil_view.py`) será editável ou removido.
+1. **[Concluído — RN01]** Auto-cadastro restrito a `aluno` e `externo` (`login_view.py` / `auth_service.py`).
+2. **[Concluído — RN18]** `BloqueioService.criar` registra as reservas conflitantes (modelo de reservas agora ligado ao `BloqueioController`). Falta apenas o aviso visual na tela.
+3. **[Alta — Segurança / RN05 e RN29]** Tornar obrigatória a checagem de `coordenador` em `EspacoService` e `EquipamentoService` (hoje ignorada quando `perfil=None`) e repassar o perfil a partir de `EspacoController`, `EquipamentoController` e das views.
+4. **[Média — Performance]** Eliminar consulta N+1 de `_historico` dentro dos 50 expanders em `views/coordenador_view.py` (carregar histórico sob demanda — já entregue). *(Validação de horário no passado em `ReservaService` também concluída.)*
+5. **[Baixa — Alinhamento RF40]** Definir se `curso` (em `perfil_view.py`) será editável ou removido. *(RF46/RN13 concluídos: `regras_especificas` exibidas no diálogo de reserva.)*
 
 ### Para Qualidade e Testes (Caio / `Solu-o`)
 1. **[Concluído — PR `#1` e branch QA]** Método `atualizar_contato` integrado em `UsuarioService` e `UsuarioController`, garantindo compatibilidade com `views/perfil_view.py`.
 2. **[Concluído — Limpeza e Segurança]** Arquivos legados `login.py` e `views/usuario_view.py` removidos definitivamente do repositório.
-3. **[Concluído — Backend & Regras]** Validação de horário de funcionamento (`RN07`), restrição de auto-cadastro para professor (`RN01`), detecção de conflitos ao criar bloqueios (`RN18`) e checagem de perfil coordenador (`RN05`/`RN29`).
+3. **[Concluído — Backend & Regras]** Validação de horário de funcionamento, mesmo dia e horário passado (`RN07`), restrição de auto-cadastro (`RN01`), detecção de conflitos ao criar bloqueios (`RN18`). A checagem de coordenador (`RN05`/`RN29`) está parcial: veja a pendência acima.
 4. **[Concluído — Cobertura Automatizada]** Suíte de testes unitários expandida com 100% de aprovação no pytest.
 
 ### Para UX e Prototipação (Amadio)
-1. **[Baixa]** Alinhar a exibição de `regras_especificas` de laboratórios no modal de reserva (`RF46`/`RN13`) e decidir o formato de avisos institucionais no banner inicial (`RF51`).
+1. **[Baixa]** Decidir o formato de avisos institucionais no banner inicial (`RF51`). *(A exibição de `regras_especificas` no modal de reserva — `RF46`/`RN13` — já foi entregue.)*
+
+### Para o Product Owner (Ruy)
+Decisões de produto que destravam as regras ainda pendentes (nenhuma é implementável sem um valor definido pela coordenação):
+
+1. **[Alta — `RN08`]** Definir a duração máxima de uma reserva (ex.: 4 h) e se laboratórios têm limite diferente.
+2. **[Alta — `RN09`]** Definir a antecedência mínima e máxima para solicitações (ex.: até 60 dias à frente).
+3. **[Média — `RN12`]** Decidir se a reserva passa a informar o número de participantes para validar a capacidade.
+4. **[Média — `RN14`]** Definir quais equipamentos exigem autorização e quem os autoriza.
+5. **[Baixa — `RN06`]** Confirmar se há espaços exclusivos por perfil além dos usuários externos.
+6. **[Baixa — `RF50`/`RF51`]** Priorizar a busca por intervalo início–fim e os avisos institucionais dinâmicos.
