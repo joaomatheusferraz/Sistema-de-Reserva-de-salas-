@@ -88,6 +88,4 @@ Os testes em `tests/` citam no nome ou na docstring a regra de negócio (`RN`) o
 | `tests/test_regras_espaco.py` | RN13, RF46 |
 | `tests/test_services.py` | RN01, RN02, RN04, RN07, RN10, RN18, RN26, RN28, RN30, RF03 |
 
-Regras ainda sem implementação (`RN06`, `RN08`, `RN09`, `RN12`, `RN14`) dependem de decisões do Product Owner e da coordenação; veja a seção do PO em [docs/matriz_rastreabilidade.md](docs/matriz_rastreabilidade.md).
-
 Projeto acadêmico em evolução (UNISAPIENS). O código-fonte evidencia a separação entre interface, regras de negócio, serviços e acesso aos dados.
